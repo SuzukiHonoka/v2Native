@@ -14,12 +14,25 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.V2Native">
         <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_settings" />
+        <activity
             android:name=".AlertActivity"
             android:exported="true" />
 
-        <service android:name=".service.Background" />
-        <receiver android:name=".service.Background$Receiver" />
-        <receiver android:name=".ui.home.HomeFragment$Receiver"/>
+        <service
+            android:name=".service.Background"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".receiver.OnBootCompleted"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

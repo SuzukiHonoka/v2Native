@@ -10,7 +10,6 @@ import android.content.IntentFilter
 import android.os.IBinder
 import android.util.Log
 import org.starx_software_lab.v2native.R
-import org.starx_software_lab.v2native.ui.slideshow.SlideshowFragment
 import org.starx_software_lab.v2native.util.Utils
 import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
@@ -43,22 +42,29 @@ class Background : Service() {
         Log.d(TAG, "onStartCommand")
         main = Thread {
             running = true
-            SlideshowFragment.logs = ""
-            serverIP = intent.getStringExtra("ip")!!
+            Utils.cleanLogs()
+            intent.getStringExtra("ip").also {
+                if (it == null) {
+                    Log.d(TAG, "onStartCommand: wtf??")
+                    stopSelf()
+                    return@Thread
+                }
+                serverIP = it
+            }
             val filesPath = applicationContext.filesDir.absolutePath
             Utils.extract(filesPath, applicationContext.assets)
             terminals[0] = Exec().also {
                 it.setListener(object : IDataReceived {
                     override fun onFailed() {
-                        SlideshowFragment.logs += "Failed"
+                        Utils.updateLogs("Failed")
                     }
 
                     override fun onData(data: String) {
-                        SlideshowFragment.logs += "$data\n"
+                        Utils.updateLogs(data)
                     }
                 })
                 it.exec("$filesPath/v2ray -config $filesPath/config.json")
-                SlideshowFragment.logs += "V2ray 已启动\n"
+                Utils.updateLogs("V2ray 已启动")
             }
             terminals[1] = Exec().also {
                 it.setListener(object : IDataReceived {
@@ -66,11 +72,11 @@ class Background : Service() {
                         Log.d(TAG, "onFailed: terminal")
                     }
 
-                    override fun onData(data: String?) {
-                        SlideshowFragment.logs += "$data\n"
+                    override fun onData(data: String) {
+                        Utils.updateLogs(data)
                         if (it.lastCmd == "nproc") {
                             it.exec("${filesPath}/ipt2socks -s 0.0.0.0 -p 10808 -b \"0.0.0.0\" -l \"12345\" -R -j $data")
-                            SlideshowFragment.logs += "ipt2socks $data 线程 已启动\n"
+                            Utils.updateLogs("ipt2socks $data 线程 已启动")
                         }
                     }
                 })
@@ -86,17 +92,17 @@ class Background : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        unregisterReceiver(receiver)
         Thread {
-            unregisterReceiver(receiver)
             cleanUP(false)
-            main.interrupt()
+            if (main.isAlive) main.interrupt()
         }.start()
         super.onDestroy()
     }
 
     private fun cleanUP(hard: Boolean) {
         running = false
-        iptables.clean(hard)
+        if (::iptables.isInitialized) iptables.clean(hard)
         terminals.forEach {
             it?.exit()
         }
@@ -118,22 +124,17 @@ class Background : Service() {
 
     private fun regReceiver() {
         receiver = Receiver()
-        receiver.setContext(this)
         val filter = IntentFilter("org.starx_software_lab.v2native.service.receiver")
         registerReceiver(receiver, filter)
     }
 
-    class Receiver : android.content.BroadcastReceiver() {
-        private lateinit var b: Background
-        fun setContext(b: Background) {
-            this.b = b
-        }
+    inner class Receiver : android.content.BroadcastReceiver() {
 
         override fun onReceive(p0: Context, intent: Intent) {
             Log.d(TAG, "onReceive: ping")
             Thread {
                 if (intent.getBooleanExtra("clean", false)) {
-                    b.cleanUP(true)
+                    this@Background.cleanUP(true)
                     Intent().also {
                         it.action = "org.starx_software_lab.v2native.ui.home"
                         it.putExtra("kill", true)
@@ -141,7 +142,7 @@ class Background : Service() {
                         Log.d(TAG, "onReceive: sent kill")
                     }
                     Thread.sleep(1000)
-                    b.stopSelf()
+                    this@Background.stopSelf()
                 } else {
                     Intent().also {
                         it.action = "org.starx_software_lab.v2native.ui.home"

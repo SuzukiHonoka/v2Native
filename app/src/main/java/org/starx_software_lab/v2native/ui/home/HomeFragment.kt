@@ -18,9 +18,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.util.Utils
@@ -69,22 +66,14 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                             val reader = InputStreamReader(ips)
                             val s = reader.readText()
                             reader.close()
-                            val obj = JsonParser.parseString(s).asJsonObject
-                            obj.remove("inbounds")
-                            val socks = JsonArray().apply {
-                                val setting = JsonObject().apply {
-                                    addProperty("listen", "127.0.0.1")
-                                    addProperty("port", 10808)
-                                    addProperty("protocol", "socks")
-                                    addProperty("tag", "socks")
+                            if (Utils.reWriteConfig(requireContext(), s)) {
+                                Handler(v.context.mainLooper).post {
+                                    Snackbar.make(v, "应用成功", Snackbar.LENGTH_SHORT).show()
                                 }
-                                add(setting)
+                                return@Thread
                             }
-                            obj.add("inbounds", socks)
-                            Log.d(TAG, "formattedJson: $obj")
-                            Utils.writeConfig(v.context, obj.toString())
                             Handler(v.context.mainLooper).post {
-                                Snackbar.make(v, "应用成功!", Snackbar.LENGTH_SHORT).show()
+                                Snackbar.make(v, "配置错误", Snackbar.LENGTH_SHORT).show()
                             }
                         }
                     }.start()
@@ -100,7 +89,6 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
     private fun regBroadcastReceiver() {
         receiver = Receiver()
-        receiver.setContext(this)
         v.context.registerReceiver(
             receiver,
             IntentFilter("org.starx_software_lab.v2native.ui.home")
@@ -112,25 +100,21 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         super.onDestroy()
     }
 
-    class Receiver : BroadcastReceiver() {
-        lateinit var ui: HomeFragment
-
-        fun setContext(ui: HomeFragment){
-            this.ui = ui
-        }
+    inner class Receiver : BroadcastReceiver() {
 
         override fun onReceive(p0: Context?, p1: Intent) {
             if (p1.getBooleanExtra("kill", false)) {
-                ui.running = false
-                ui.button.text = ui.getString(R.string.stop)
-                ui.updateStatus()
-                Toast.makeText(ui.context, "Service Stopped", Toast.LENGTH_SHORT).show()
+                this@HomeFragment.running = false
+                this@HomeFragment.button.text = this@HomeFragment.getString(R.string.stop)
+                this@HomeFragment.updateStatus()
+                Toast.makeText(this@HomeFragment.context, "Service Stopped", Toast.LENGTH_SHORT)
+                    .show()
                 return
             }
             Log.d("UI", "onReceive: pong!!")
-            ui.running = true
-            Toast.makeText(ui.context, "Service Running", Toast.LENGTH_SHORT).show()
-            ui.updateStatus()
+            this@HomeFragment.running = true
+            Toast.makeText(this@HomeFragment.context, "Service Running", Toast.LENGTH_SHORT).show()
+            this@HomeFragment.updateStatus()
         }
     }
 
@@ -145,7 +129,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     override fun onClick(p0: View) {
         when (p0.id) {
             R.id.start -> {
-                if (allow == null || allow == false ) {
+                if (allow == null || allow == false) {
                     Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
                     return
                 }

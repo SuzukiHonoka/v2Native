@@ -20,4 +20,6 @@
     <string name="info">INFO</string>
     <string name="configurationFile">配置文件</string>
     <string name="load">LOAD</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+
 </resources>

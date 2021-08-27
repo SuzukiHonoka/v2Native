@@ -1,5 +1,6 @@
 package org.starx_software_lab.v2native
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -15,9 +16,16 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
+import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
+import org.starx_software_lab.v2native.ui.settings.SettingsActivity
+import org.starx_software_lab.v2native.util.Utils
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        val TAG = "Main"
+    }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private var back: Long? = null
@@ -45,20 +53,24 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
             R.id.action_about -> {
                 AlertDialog.Builder(this)
                     .setTitle("About")
-                    .setMessage("@starx")
+                    .setMessage("A tool made by @starx")
                     .create()
                     .show()
                 true
@@ -90,5 +102,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         super.onBackPressed()
+    }
+
+    override fun onDestroy() {
+        if (Utils.getPerfBool(this, "autoStop", false)) {
+            stopService(Intent(this, Background::class.java))
+            Log.d(TAG, "onDestroy: Background stopped")
+        }
+        super.onDestroy()
     }
 }
