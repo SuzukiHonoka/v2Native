@@ -43,13 +43,14 @@ class Background : Service() {
         main = Thread {
             running = true
             Utils.cleanLogs()
-            intent.getStringExtra("ip").also {
-                if (it == null) {
-                    Log.d(TAG, "onStartCommand: wtf??")
-                    stopSelf()
-                    return@Thread
+            try {
+                intent.getStringExtra("ip")!!.also {
+                    serverIP = it
                 }
-                serverIP = it
+            } catch (e: Exception) {
+                Log.d(TAG, "onStartCommand: wtf??")
+                stopSelf()
+                return@Thread
             }
             val filesPath = applicationContext.filesDir.absolutePath
             Utils.extract(filesPath, applicationContext.assets)
@@ -87,7 +88,7 @@ class Background : Service() {
             }
         }
         main.start()
-        return START_STICKY
+        return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
