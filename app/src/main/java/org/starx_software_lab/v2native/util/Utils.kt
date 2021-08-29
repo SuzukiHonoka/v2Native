@@ -25,6 +25,9 @@ import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
 import java.io.File
 import java.io.FileOutputStream
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
 import java.time.LocalDate
 
 
@@ -210,6 +213,7 @@ class Utils {
             }
             val routing = JsonObject().apply {
                 addProperty("domainStrategy", "IPIfNonMatch")
+
                 addProperty("domainMatcher", "mph")
                 val rules = JsonArray().apply {
                     val proxyDNS = JsonObject().apply {
@@ -255,9 +259,18 @@ class Utils {
             return null
         }
 
-        fun getServerBlock(json: JsonObject): JsonElement? {
+        private fun getServerBlock(json: JsonObject): JsonElement? {
             json.getAsJsonArray("outbounds").forEach { els ->
                 if (els.asJsonObject.get("tag").asString == "proxy") {
+//                    val serverIP =
+//                        els.asJsonObject.get("settings").asJsonObject.get("vnext")
+//                            .asJsonArray.get(0).asJsonObject.get("address").asString
+//                    els.asJsonObject.get("settings").asJsonObject.get("vnext")
+//                        .asJsonArray.get(0).asJsonObject.remove("address")
+//                    val address = InetAddress.getByName(serverIP).hostAddress
+//                    els.asJsonObject.get("settings").asJsonObject.get("vnext")
+//                        .asJsonArray.get(0).asJsonObject.addProperty("address",address)
+//                    Log.d(TAG, "getServerBlock: $serverIP -> $address")
                     Log.d(HomeFragment.TAG, "parser: proxy outbound found!")
                     return els
                 }
