@@ -103,18 +103,15 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     inner class Receiver : BroadcastReceiver() {
 
         override fun onReceive(p0: Context?, p1: Intent) {
-            if (p1.getBooleanExtra("kill", false)) {
-                this@HomeFragment.running = false
-                this@HomeFragment.button.text = this@HomeFragment.getString(R.string.stop)
-                this@HomeFragment.updateStatus()
-                Toast.makeText(this@HomeFragment.context, "Service Stopped", Toast.LENGTH_SHORT)
-                    .show()
+            Log.d("UI", "onReceive: pong!!")
+            running = p1.getBooleanExtra("running", false)
+            button.text = if (running) getString(R.string.stop) else getString(R.string.start)
+            button.isEnabled = true
+            if (running) {
+                Toast.makeText(context, "Service Running", Toast.LENGTH_SHORT).show()
                 return
             }
-            Log.d("UI", "onReceive: pong!!")
-            this@HomeFragment.running = true
-            Toast.makeText(this@HomeFragment.context, "Service Running", Toast.LENGTH_SHORT).show()
-            this@HomeFragment.updateStatus()
+            Toast.makeText(context, "Service Stopped", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -134,34 +131,29 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     return
                 }
                 val intent = Intent(context, Background::class.java)
-                if (running) {
-                    Thread {
-                        v.context.applicationContext.apply {
-                            stopService(intent)
-                        }
-                    }.start()
-                    running = false
-                    button.text = getString(R.string.start)
-                    Snackbar.make(v, "已停止服务", Snackbar.LENGTH_SHORT).show()
-                    return
-                }
                 if (!Utils.checkConfig(p0.context)) {
                     Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
                     return
                 }
-                v.context.applicationContext.apply {
-                    Utils.getServerIP(v.context).also {
-                        if (it.isNullOrEmpty()) {
-                            Snackbar.make(v, "读取远程服务器IP失败", Snackbar.LENGTH_SHORT).show()
-                            return
+                button.isEnabled = false
+                Thread {
+                    if (running) {
+                        v.context.applicationContext.apply {
+                            stopService(intent)
                         }
-                        intent.putExtra("ip", it)
+                        return@Thread
                     }
-                    startForegroundService(intent)
-                }
-                running = true
-                button.text = getString(R.string.stop)
-                Snackbar.make(v, "已启动服务", Snackbar.LENGTH_SHORT).show()
+                    v.context.applicationContext.apply {
+                        Utils.getServerIP(v.context).also {
+                            if (it.isNullOrEmpty()) {
+                                Snackbar.make(v, "读取远程服务器IP失败", Snackbar.LENGTH_SHORT).show()
+                                return@Thread
+                            }
+                            intent.putExtra("ip", it)
+                        }
+                        startForegroundService(intent)
+                    }
+                }.start()
             }
             R.id.tab -> {
                 checkLife(false)

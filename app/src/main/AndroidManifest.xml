@@ -8,7 +8,7 @@
 
     <application
         android:allowBackup="false"
-        android:extractNativeLibs="true"
+        android:extractNativeLibs="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -16,15 +16,14 @@
         android:theme="@style/Theme.V2Native">
         <activity
             android:name=".ui.settings.SettingsActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_settings" />
         <activity
             android:name=".AlertActivity"
-            android:exported="true" />
+            android:exported="false" />
 
         <service
             android:name=".service.Background"
-            android:exported="false"
             android:foregroundServiceType="dataSync" />
 
         <receiver

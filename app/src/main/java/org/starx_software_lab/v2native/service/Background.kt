@@ -41,7 +41,6 @@ class Background : Service() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         main = Thread {
-            running = true
             Utils.cleanLogs()
             try {
                 intent.getStringExtra("ip")!!.also {
@@ -86,8 +85,11 @@ class Background : Service() {
             iptables = Utils.Iptables(serverIP, this).apply {
                 setup()
             }
+            running = true
+            updateStatus()
+        }.apply {
+            start()
         }
-        main.start()
         return START_REDELIVER_INTENT
     }
 
@@ -97,12 +99,13 @@ class Background : Service() {
         Thread {
             cleanUP(false)
             if (main.isAlive) main.interrupt()
+            running = false
+            updateStatus()
         }.start()
         super.onDestroy()
     }
 
     private fun cleanUP(hard: Boolean) {
-        running = false
         if (::iptables.isInitialized) iptables.clean(hard)
         terminals.forEach {
             it?.exit()
@@ -129,27 +132,25 @@ class Background : Service() {
         registerReceiver(receiver, filter)
     }
 
+    private fun updateStatus() {
+        Intent().also {
+            it.action = "org.starx_software_lab.v2native.ui.home"
+            it.putExtra("running", running)
+            applicationContext.sendBroadcast(it)
+        }
+    }
+
     inner class Receiver : android.content.BroadcastReceiver() {
 
         override fun onReceive(p0: Context, intent: Intent) {
             Log.d(TAG, "onReceive: ping")
             Thread {
                 if (intent.getBooleanExtra("clean", false)) {
-                    this@Background.cleanUP(true)
-                    Intent().also {
-                        it.action = "org.starx_software_lab.v2native.ui.home"
-                        it.putExtra("kill", true)
-                        p0.sendBroadcast(it)
-                        Log.d(TAG, "onReceive: sent kill")
-                    }
-                    Thread.sleep(1000)
-                    this@Background.stopSelf()
-                } else {
-                    Intent().also {
-                        it.action = "org.starx_software_lab.v2native.ui.home"
-                        p0.sendBroadcast(it)
-                    }
+                    cleanUP(true)
+                    stopSelf()
+                    Log.d(TAG, "onReceive: sent kill")
                 }
+                updateStatus()
             }.start()
         }
     }

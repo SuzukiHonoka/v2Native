@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
                         super.onBackPressed()
                     }
                     back = now
-                    Snackbar.make(window.decorView, "再按一次退出~", Snackbar.LENGTH_SHORT).show()
+                    Snackbar.make(it.requireView(), "再按一次退出~", Snackbar.LENGTH_SHORT).show()
                     return
                 }
             }

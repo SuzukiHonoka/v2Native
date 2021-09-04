@@ -11,8 +11,8 @@ android {
         applicationId "org.starx_software_lab.v2native"
         minSdkVersion 28
         targetSdkVersion 31
-        versionCode 10107
-        versionName "1.1.7"
+        versionCode 10108
+        versionName '1.1.8'
     }
 
     buildTypes {
