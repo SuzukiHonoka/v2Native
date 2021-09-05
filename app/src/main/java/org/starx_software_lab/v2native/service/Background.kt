@@ -144,12 +144,15 @@ class Background : Service() {
 
         override fun onReceive(p0: Context, intent: Intent) {
             Log.d(TAG, "onReceive: ping")
-            if (!intent.getBooleanExtra("clean", false)) return
-            Thread {
+            if (!intent.getBooleanExtra("clean", false)) {
                 updateStatus()
+                return
+            }
+            Thread {
                 cleanUP(true)
-                    stopSelf()
-                    Log.d(TAG, "onReceive: sent kill")
+                stopSelf()
+                updateStatus()
+                Log.d(TAG, "onReceive: sent kill")
             }.start()
         }
     }
