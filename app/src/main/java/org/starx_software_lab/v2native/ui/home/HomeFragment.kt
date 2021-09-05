@@ -34,6 +34,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     private lateinit var v: View
     private lateinit var resultLauncher: ActivityResultLauncher<Intent>
     private var allow: Boolean? = null
+    private var autoCheck = true
 
     var running = false
 
@@ -107,20 +108,13 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             running = p1.getBooleanExtra("running", false)
             button.text = if (running) getString(R.string.stop) else getString(R.string.start)
             button.isEnabled = true
+            autoCheck = true
             if (running) {
                 Toast.makeText(context, "Service Running", Toast.LENGTH_SHORT).show()
                 return
             }
             Toast.makeText(context, "Service Stopped", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun updateStatus() {
-        if (running) {
-            button.text = getString(R.string.stop)
-            return
-        }
-        button.text = getString(R.string.start)
     }
 
     override fun onClick(p0: View) {
@@ -135,6 +129,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
                     return
                 }
+                autoCheck = false
                 button.isEnabled = false
                 Thread {
                     if (running) {
@@ -156,6 +151,10 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                 }.start()
             }
             R.id.tab -> {
+                if (!autoCheck) {
+                    Toast.makeText(v.context, "等待服务进程结束", Toast.LENGTH_SHORT).show()
+                    return
+                }
                 checkLife(false)
             }
             R.id.load -> {
@@ -181,7 +180,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     }
 
     override fun onResume() {
-        checkLife(false)
+        if (autoCheck) checkLife(false)
         super.onResume()
     }
 
