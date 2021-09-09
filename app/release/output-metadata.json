@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 10109,
-      "versionName": "1.1.9",
-      "outputFile": "V2Native_1.1.9.apk"
+      "versionCode": 10200,
+      "versionName": "1.2.0",
+      "outputFile": "V2Native_1.2.0.apk"
     }
   ],
   "elementType": "File"

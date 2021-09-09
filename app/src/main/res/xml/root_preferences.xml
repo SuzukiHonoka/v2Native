@@ -22,19 +22,24 @@
             app:summary="once the inbound were exported, it can be accessed through other device in your network."
             app:title="Export Socks5 Inbound" />
 
+        <SwitchPreferenceCompat
+            app:key="allowOther"
+            app:summary="Allow other device go though the chain, this is useful if you plan to share the network."
+            app:title="Allow Other Device" />
+
     </PreferenceCategory>
 
     <PreferenceCategory app:title="IPTABLES">
 
         <EditTextPreference
             app:key="addition"
-            app:summary="additional IP blocks needed to bypass via iptables, split by &quot;,&quot;. ( bypass CHN IP blocks by default )"
+            app:summary="additional IP blocks needed to bypass via iptables, split by &quot;,&quot;. (bypass CHN IP blocks by default)"
             app:title="Additional Bypass IP Blocks" />
 
         <EditTextPreference
             app:defaultValue="30"
             app:key="timeout"
-            app:summary="service will wait until the flag or specify timeout reached. ( it will take a while due to missing ipset module support by default in android system )"
+            app:summary="service will wait until the flag or specify timeout reached. (it will take a while due to missing ipset module support by default in android system)"
             app:title="Timeout For Inserting CHN Rule" />
 
     </PreferenceCategory>

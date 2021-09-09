@@ -37,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
             return when (item.itemId) {
                 android.R.id.home -> {
                     requireActivity().onBackPressed()
+
                     true
                 }
                 else -> false

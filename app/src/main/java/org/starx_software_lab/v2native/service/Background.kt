@@ -85,11 +85,11 @@ class Background : Service() {
             iptables = Utils.Iptables(serverIP, this).apply {
                 setup()
             }
-            running = true
-            updateStatus()
         }.apply {
             start()
         }
+        running = true
+        updateStatus()
         return START_REDELIVER_INTENT
     }
 

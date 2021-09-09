@@ -124,7 +124,6 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
                     return
                 }
-                val intent = Intent(context, Background::class.java)
                 if (!Utils.checkConfig(p0.context)) {
                     Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
                     return
@@ -134,19 +133,14 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                 Thread {
                     if (running) {
                         v.context.applicationContext.apply {
-                            stopService(intent)
+                            stopService(Intent(context, Background::class.java))
                         }
                         return@Thread
                     }
-                    v.context.applicationContext.apply {
-                        Utils.getServerIP(v.context).also {
-                            if (it.isNullOrEmpty()) {
-                                Snackbar.make(v, "读取远程服务器IP失败", Snackbar.LENGTH_SHORT).show()
-                                return@Thread
-                            }
-                            intent.putExtra("ip", it)
+                    v.context.applicationContext.also {
+                        if (!Utils.serviceAgent(v.context)) {
+                            Snackbar.make(v, "无法启动服务", Snackbar.LENGTH_SHORT).show()
                         }
-                        startForegroundService(intent)
                     }
                 }.start()
             }

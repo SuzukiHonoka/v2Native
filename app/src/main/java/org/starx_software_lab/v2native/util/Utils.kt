@@ -30,7 +30,7 @@ import java.time.LocalDate
 
 class Utils {
     companion object {
-        val TAG = "Util"
+        private const val TAG = "Util"
         private val preloads = arrayOf(
             "v2ray",
             "v2ctl",
@@ -40,7 +40,7 @@ class Utils {
             "cn.zone"
         )
 
-        val dns = arrayOf(
+        private val dns = arrayOf(
             "8.8.8.8",
             "8.8.4.4",
             "1.1.1.1"
@@ -158,7 +158,7 @@ class Utils {
         fun cancel(context: Context) =
             (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(1)
 
-        fun writeConfig(context: Context, config: String) =
+        private fun writeConfig(context: Context, config: String) =
             File(context.filesDir.absolutePath + "/config.json").writeText(config)
 
         fun reWriteConfig(v: Context, s: String): Boolean {
@@ -239,7 +239,7 @@ class Utils {
         fun checkConfig(context: Context) =
             File(context.filesDir.absolutePath + "/config.json").exists()
 
-        fun getServerIP(context: Context): String? {
+        private fun getServerIP(context: Context): String? {
             val obj =
                 JsonParser.parseString(File(context.filesDir.absolutePath + "/config.json").readText()).asJsonObject
             obj.getAsJsonArray("outbounds").forEach { els ->
@@ -294,14 +294,26 @@ class Utils {
             return true
         }
 
-        fun getPerfStr(context: Context, key: String, def: String) =
-            PreferenceManager.getDefaultSharedPreferences(context).getString(key, def)
+        fun getPerfStr(context: Context, key: String, def: String): String =
+            PreferenceManager.getDefaultSharedPreferences(context).getString(key, def)!!
 
-        fun getPerfBool(context: Context, key: String, def: Boolean) =
+        fun getPerfBool(context: Context, key: String, def: Boolean): Boolean =
             PreferenceManager.getDefaultSharedPreferences(context).getBoolean(key, def)
 
-        fun getPerfInt(context: Context, key: String, def: Int) =
-            getPerfStr(context, key, def.toString())
+        fun getPerfInt(context: Context, key: String, def: Int): Int =
+            getPerfStr(context, key, def.toString()).toInt()
+
+        fun serviceAgent(context: Context): Boolean {
+            val intent = Intent(context, Background::class.java)
+            getServerIP(context).also {
+                if (it.isNullOrEmpty()) {
+                    return false
+                }
+                intent.putExtra("ip", it)
+            }
+            context.startForegroundService(intent)
+            return true
+        }
     }
 
     class Commands {
@@ -340,8 +352,8 @@ class Utils {
                 "iptables -t nat -I STARX 2 -p udp --dport 53 -j RETURN"
             )
             val applyCMD = arrayOf(
-                "iptables -t nat -A PREROUTING -p tcp -j $chain",
-                "iptables -t nat -A OUTPUT -p tcp -j $chain"
+                "iptables -t nat -A OUTPUT -p tcp -j $chain",
+                "iptables -t nat -A PREROUTING -p tcp -j $chain"
             )
             val cleanCMD = arrayOf(
                 "iptables -t nat -D PREROUTING -p tcp -j $chain",
@@ -397,8 +409,12 @@ class Utils {
                         Commands.output -> {
                             if (!data.contains(chain) && !done) {
                                 Log.d(TAG, "onData: need apply")
-                                applyCMD.forEach {
-                                    terminal.exec(it)
+                                if (getPerfBool(context, "allowOther", false)) {
+                                    applyCMD.forEach {
+                                        terminal.exec(it)
+                                    }
+                                } else {
+                                    terminal.exec(applyCMD[0])
                                 }
                                 done = true
                                 updateLogs("iptables 分流规则应用完成")
@@ -430,8 +446,8 @@ class Utils {
             terminal.exec(Commands.output)
             notify(context, "服务正在运行", "等待分流链被应用..")
             var timeout = 30
-            getPerfStr(context, "timeout", "30").also {
-                it!!.toInt().also { t ->
+            getPerfInt(context, "timeout", 30).also {
+                it.also { t ->
                     if (t >= 30) {
                         timeout = t
                     }
@@ -463,7 +479,7 @@ class Utils {
             reserved.forEach {
                 terminal.exec("iptables -t nat -A $chain -d $it -j RETURN")
             }
-            getPerfStr(context, "addition", "")!!.split(",").forEach {
+            getPerfStr(context, "addition", "").split(",").forEach {
                 terminal.exec("iptables -t nat -A $chain -d $it -j RETURN")
             }
             val start = System.currentTimeMillis()
