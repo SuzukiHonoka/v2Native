@@ -19,7 +19,6 @@ import org.starx_software_lab.v2native.MainActivity
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
-import org.starx_software_lab.v2native.ui.slideshow.SlideshowFragment
 import org.starx_software_lab.v2native.util.Utils.Iptables.Companion.chain
 import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
@@ -276,11 +275,11 @@ class Utils {
         }
 
         fun cleanLogs() {
-            SlideshowFragment.logs = ""
+            Iptables.logs = ""
         }
 
         fun updateLogs(msg: String) {
-            SlideshowFragment.logs += "$msg\n"
+            Iptables.logs += "$msg\n"
         }
 
         fun sleep(t: Long): Boolean {
@@ -366,17 +365,14 @@ class Utils {
                 "killall ipt2socks",
                 "killall iptables"
             )
-            lateinit var terminal: Exec
+            var logs = ""
         }
 
+        private var terminal: Exec = Exec()
         private var inited: Boolean? = null
         private var done: Boolean = false
         private var initing = false
         private var cleaned = false
-
-        init {
-            terminal = Exec()
-        }
 
         fun setup() {
             terminal.setListener(object : IDataReceived {

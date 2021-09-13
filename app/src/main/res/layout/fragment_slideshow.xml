@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp"
-    tools:context=".ui.slideshow.SlideshowFragment">
+    tools:context=".ui.log.LogFragment">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -50,17 +50,17 @@
 
                 <Button
                     android:id="@+id/refresh"
+                    style="@android:style/Widget.Material.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="10dp"
                     android:layout_weight="1"
                     android:text="@string/refresh" />
 
                 <Button
                     android:id="@+id/clear"
+                    style="@android:style/Widget.Material.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:text="@string/clear" />
             </LinearLayout>

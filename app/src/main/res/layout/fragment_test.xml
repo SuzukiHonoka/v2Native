@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="8dp"
-    tools:context=".ui.gallery.GalleryFragment">
+    tools:context=".ui.test.TestFragment">
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="终端命令"
+                android:text="@string/terminal_command"
                 android:textAppearance="@style/TextAppearance.AppCompat.Caption"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -35,6 +35,7 @@
                 android:layout_height="200dp"
                 android:layout_marginTop="5dp"
                 android:gravity="top|start"
+                android:hint="@string/enter_your_commands_here"
                 android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:scrollbars="vertical" />
@@ -42,21 +43,23 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/execute"
-                    android:layout_width="wrap_content"
+                    style="@android:style/Widget.Material.Button"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Execute" />
+                    android:layout_weight="1"
+                    android:text="@string/execute" />
 
                 <Button
                     android:id="@+id/clear"
-                    android:layout_width="wrap_content"
+                    style="@android:style/Widget.Material.Button"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="20dp"
-                    android:text="Clear" />
+                    android:layout_weight="1"
+                    android:text="@string/clear" />
             </LinearLayout>
 
         </LinearLayout>

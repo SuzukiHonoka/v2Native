@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import org.starx_software_lab.v2native.R
@@ -47,6 +48,10 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             Toast.makeText(requireContext(), "已过期", Toast.LENGTH_SHORT).show()
             requireActivity().finish()
         }
+        val homeViewModel: HomeViewModel by activityViewModels()
+        homeViewModel.getAllow().observe(viewLifecycleOwner, {
+            allow = it
+        })
         v = inflater.inflate(R.layout.fragment_home, container, false).also {
             it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener(this)
             it.findViewById<Button>(R.id.load).setOnClickListener(this)
@@ -54,38 +59,38 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             button.setOnClickListener(this)
             button.setOnLongClickListener(this)
         }
-        resultLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == Activity.RESULT_OK) {
-                    val contentResolver = v.context.contentResolver
-                    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    contentResolver.takePersistableUriPermission(result.data!!.data!!, takeFlags)
-                    Thread {
-                        result.data.also {
-                            val ips = contentResolver.openInputStream(it!!.data!!)
-                            val reader = InputStreamReader(ips)
-                            val s = reader.readText()
-                            reader.close()
-                            if (Utils.reWriteConfig(requireContext(), s)) {
-                                Handler(v.context.mainLooper).post {
-                                    Snackbar.make(v, "应用成功", Snackbar.LENGTH_SHORT).show()
-                                }
-                                return@Thread
-                            }
-                            Handler(v.context.mainLooper).post {
-                                Snackbar.make(v, "配置错误", Snackbar.LENGTH_SHORT).show()
-                            }
-                        }
-                    }.start()
-                }
-            }
+        resultLauncher = regResultLauncher()
         regBroadcastReceiver()
         checkLife(false)
-        Thread {
-            allow = Utils.checkRoot()
-        }.start()
         return v
+    }
+
+    private fun regResultLauncher(): ActivityResultLauncher<Intent> {
+        return registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val contentResolver = v.context.contentResolver
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(result.data!!.data!!, takeFlags)
+                Thread {
+                    result.data.also {
+                        val ips = contentResolver.openInputStream(it!!.data!!)
+                        val reader = InputStreamReader(ips)
+                        val s = reader.readText()
+                        reader.close()
+                        if (Utils.reWriteConfig(requireContext(), s)) {
+                            Handler(v.context.mainLooper).post {
+                                Snackbar.make(v, "应用成功", Snackbar.LENGTH_SHORT).show()
+                            }
+                            return@Thread
+                        }
+                        Handler(v.context.mainLooper).post {
+                            Snackbar.make(v, "配置错误", Snackbar.LENGTH_SHORT).show()
+                        }
+                    }
+                }.start()
+            }
+        }
     }
 
     private fun regBroadcastReceiver() {
@@ -160,7 +165,6 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             }
         }
     }
-
 
     private fun checkLife(stop: Boolean) {
         Intent().also {

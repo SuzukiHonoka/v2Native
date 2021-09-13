@@ -1,7 +1,11 @@
 package org.starx_software_lab.v2native
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -20,6 +24,7 @@ import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
 import org.starx_software_lab.v2native.ui.settings.SettingsActivity
 import org.starx_software_lab.v2native.util.Utils
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,10 +58,28 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    @SuppressLint("BatteryLife")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            R.id.action_disable_battery_optimization -> {
+                val pm = getSystemService(POWER_SERVICE) as PowerManager
+                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                    Intent().also { intent ->
+                        intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        intent.data = Uri.parse("package:$packageName")
+                        startActivity(intent)
+                    }
+                } else {
+                    Snackbar.make(
+                        supportFragmentManager.findFragmentById(R.id.nav_host_fragment)!!.childFragmentManager.fragments[0].requireView(),
+                        "当前已优化",
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                }
                 true
             }
             R.id.action_about -> {
@@ -65,6 +88,10 @@ class MainActivity : AppCompatActivity() {
                     .setMessage("A tool made by @starx")
                     .create()
                     .show()
+                true
+            }
+            R.id.action_exit -> {
+                finish()
                 true
             }
             else -> false
@@ -77,10 +104,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-
-        supportFragmentManager.findFragmentById(R.id.nav_host_fragment)?.childFragmentManager?.fragments?.get(
-            0
-        )
+        supportFragmentManager.findFragmentById(R.id.nav_host_fragment)!!.childFragmentManager.fragments[0]
             .also {
                 Log.d("onBackPressed", "onBackPressed: " + it?.javaClass?.name)
                 if (it is HomeFragment) {

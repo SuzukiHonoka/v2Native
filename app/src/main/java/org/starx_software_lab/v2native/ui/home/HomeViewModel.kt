@@ -1,13 +1,16 @@
 package org.starx_software_lab.v2native.ui.home
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import org.starx_software_lab.v2native.util.Utils
 
 class HomeViewModel : ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is home Fragment"
+    private val _allow = MutableLiveData<Boolean>().apply {
+        value = Utils.checkRoot()
     }
-    val text: LiveData<String> = _text
+
+    fun getAllow(): MutableLiveData<Boolean> {
+        return _allow
+    }
 }

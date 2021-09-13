@@ -13,13 +13,13 @@
 
     <fragment
         android:id="@+id/nav_test"
-        android:name="org.starx_software_lab.v2native.ui.gallery.GalleryFragment"
+        android:name="org.starx_software_lab.v2native.ui.test.TestFragment"
         android:label="@string/menu_test"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_test" />
 
     <fragment
         android:id="@+id/nav_logs"
-        android:name="org.starx_software_lab.v2native.ui.slideshow.SlideshowFragment"
+        android:name="org.starx_software_lab.v2native.ui.log.LogFragment"
         android:label="@string/menu_logs"
         tools:layout="@layout/fragment_slideshow" />
 </navigation>

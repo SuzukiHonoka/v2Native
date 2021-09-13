@@ -1,4 +1,4 @@
-package org.starx_software_lab.v2native.ui.slideshow
+package org.starx_software_lab.v2native.ui.log
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,37 +7,25 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import org.starx_software_lab.v2native.R
+import org.starx_software_lab.v2native.util.Utils
 
-class SlideshowFragment : Fragment() {
-
-    private lateinit var slideshowViewModel: SlideshowViewModel
-
-    companion object {
-        var logs = ""
-    }
+class LogFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        slideshowViewModel =
-            ViewModelProvider(this).get(SlideshowViewModel::class.java)
         val root = inflater.inflate(R.layout.fragment_slideshow, container, false)
         val textView: TextView = root.findViewById(R.id.log)
-        textView.text = logs
+        textView.text = Utils.Iptables.logs
         root.findViewById<Button>(R.id.refresh).setOnClickListener {
-            textView.text = logs
+            textView.text = Utils.Iptables.logs
         }
         root.findViewById<Button>(R.id.clear).setOnClickListener {
             textView.text = ""
-            logs = ""
         }
-//        slideshowViewModel.text.observe(viewLifecycleOwner, Observer {
-//            textView.text = it
-//        })
         return root
     }
 }

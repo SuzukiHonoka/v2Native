@@ -21,5 +21,10 @@
     <string name="configurationFile">配置文件</string>
     <string name="load">LOAD</string>
     <string name="title_activity_settings">SettingsActivity</string>
-
+    <string name="action_disable_battery_optimization">KeepAlive</string>
+    <string name="action_exit">Exit</string>
+    <string name="failed">failed</string>
+    <string name="terminal_command">终端命令</string>
+    <string name="execute">Execute</string>
+    <string name="enter_your_commands_here">Enter your commands here..</string>
 </resources>
