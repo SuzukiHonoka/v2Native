@@ -16,9 +16,9 @@
     <string name="log_info">日志信息</string>
     <string name="refresh">REFRESH</string>
     <string name="clear">Clear</string>
-    <string name="v2native_switch">V2NATIVE 开关</string>
+    <string name="v2native_switch">服务开关</string>
     <string name="info">INFO</string>
-    <string name="configurationFile">配置文件</string>
+    <string name="configurationFile">导入配置</string>
     <string name="load">LOAD</string>
     <string name="title_activity_settings">SettingsActivity</string>
     <string name="action_disable_battery_optimization">KeepAlive</string>
@@ -27,4 +27,6 @@
     <string name="terminal_command">终端命令</string>
     <string name="execute">Execute</string>
     <string name="enter_your_commands_here">Enter your commands here..</string>
+    <string name="currentConfiguration">当前配置</string>
+    <string name="check">CHECK</string>
 </resources>

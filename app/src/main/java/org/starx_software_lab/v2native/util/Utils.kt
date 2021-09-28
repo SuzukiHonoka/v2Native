@@ -7,14 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
 import android.util.Log
-import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.preference.PreferenceManager
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.google.gson.*
 import org.starx_software_lab.v2native.MainActivity
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
@@ -29,6 +25,7 @@ import java.time.LocalDate
 
 class Utils {
     companion object {
+        var configPath = ""
         private const val TAG = "Util"
         private val preloads = arrayOf(
             "v2ray",
@@ -38,15 +35,12 @@ class Utils {
             "ipt2socks",
             "cn.zone"
         )
-
         private val dns = arrayOf(
             "8.8.8.8",
             "8.8.4.4",
             "1.1.1.1"
         )
-
-        private val exp = LocalDate.parse("2021-09-15")
-
+        private val exp = LocalDate.parse("2022-09-15")
         fun checkEXP() = LocalDate.now() >= exp
 
         fun checkRoot(): Boolean {
@@ -84,9 +78,6 @@ class Utils {
             }
             return false
         }
-
-        fun updateText(textView: TextView, msg: String) =
-            "${textView.text}\n$msg".also { textView.text = it }
 
         fun extract(path: String, assetManager: AssetManager): Boolean {
             println("path: $path")
@@ -157,8 +148,8 @@ class Utils {
         fun cancel(context: Context) =
             (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(1)
 
-        private fun writeConfig(context: Context, config: String) =
-            File(context.filesDir.absolutePath + "/config.json").writeText(config)
+        private fun writeConfig(config: String) =
+            File(configPath).writeText(config)
 
         fun reWriteConfig(v: Context, s: String): Boolean {
             val obj = JsonParser.parseString(s).asJsonObject.apply {
@@ -231,16 +222,16 @@ class Utils {
             obj.add("routing", routing)
             obj.add("inbounds", socks)
             Log.d(HomeFragment.TAG, "formattedJson: $obj")
-            writeConfig(v, obj.toString())
+            writeConfig(obj.toString())
             return true
         }
 
-        fun checkConfig(context: Context) =
-            File(context.filesDir.absolutePath + "/config.json").exists()
+        fun checkConfig() =
+            File(configPath).exists()
 
-        private fun getServerIP(context: Context): String? {
+        private fun getServerIP(): String? {
             val obj =
-                JsonParser.parseString(File(context.filesDir.absolutePath + "/config.json").readText()).asJsonObject
+                JsonParser.parseString(File(configPath).readText()).asJsonObject
             obj.getAsJsonArray("outbounds").forEach { els ->
                 if (els.asJsonObject.get("tag").asString == "proxy") {
                     Log.d(HomeFragment.TAG, "parser: proxy outbound found!")
@@ -304,7 +295,7 @@ class Utils {
 
         fun serviceAgent(context: Context): Boolean {
             val intent = Intent(context, Background::class.java)
-            getServerIP(context).also {
+            getServerIP().also {
                 if (it.isNullOrEmpty()) {
                     return false
                 }
@@ -312,6 +303,12 @@ class Utils {
             }
             context.startForegroundService(intent)
             return true
+        }
+
+        fun prettifyJson(s: String): String {
+            val gson = GsonBuilder().setPrettyPrinting().create()
+            val je = JsonParser.parseString(s)
+            return gson.toJson(je)
         }
     }
 

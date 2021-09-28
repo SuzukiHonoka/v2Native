@@ -17,7 +17,7 @@ class LogFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val root = inflater.inflate(R.layout.fragment_slideshow, container, false)
+        val root = inflater.inflate(R.layout.fragment_log, container, false)
         val textView: TextView = root.findViewById(R.id.log)
         textView.text = Utils.Iptables.logs
         root.findViewById<Button>(R.id.refresh).setOnClickListener {
@@ -25,6 +25,7 @@ class LogFragment : Fragment() {
         }
         root.findViewById<Button>(R.id.clear).setOnClickListener {
             textView.text = ""
+            Utils.Iptables.logs = ""
         }
         return root
     }

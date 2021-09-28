@@ -12,9 +12,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -22,6 +24,7 @@ import com.google.android.material.snackbar.Snackbar
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.util.Utils
+import java.io.File
 import java.io.InputStreamReader
 
 class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener {
@@ -55,6 +58,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         v = inflater.inflate(R.layout.fragment_home, container, false).also {
             it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener(this)
             it.findViewById<Button>(R.id.load).setOnClickListener(this)
+            it.findViewById<Button>(R.id.check).setOnClickListener(this)
             button = it.findViewById(R.id.start)
             button.setOnClickListener(this)
             button.setOnLongClickListener(this)
@@ -129,7 +133,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
                     return
                 }
-                if (!Utils.checkConfig(p0.context)) {
+                if (!Utils.checkConfig()) {
                     Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
                     return
                 }
@@ -162,6 +166,21 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     type = "application/json"
                 }
                 resultLauncher.launch(intent)
+            }
+            R.id.check -> {
+                if (!Utils.checkConfig()) {
+                    Snackbar.make(p0, "配置文件错误或不存在", Snackbar.LENGTH_SHORT).show()
+                    return
+                }
+                val view = LayoutInflater.from(context).inflate(R.layout.log_view, null)
+                view.findViewById<TextView>(R.id.log_msg).text =
+                    Utils.prettifyJson(File(Utils.configPath).readText())
+                AlertDialog.Builder(requireContext()).apply {
+                    setPositiveButton("OK", null)
+                    setView(view)
+                    create()
+                    show()
+                }
             }
         }
     }

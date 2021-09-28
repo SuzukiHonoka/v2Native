@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
     tools:context=".ui.home.HomeFragment">
 
     <LinearLayout
@@ -14,13 +13,12 @@
         android:orientation="vertical">
 
         <androidx.cardview.widget.CardView
-            android:id="@+id/card1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="0dp"
-            app:cardElevation="2dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="5dp"
             app:cardUseCompatPadding="true"
-            app:contentPadding="8dp">
+            app:contentPadding="15dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -46,10 +44,39 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="0dp"
-            app:cardElevation="2dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="5dp"
             app:cardUseCompatPadding="true"
-            app:contentPadding="8dp">
+            app:contentPadding="15dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/currentConfiguration"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/check" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="5dp"
+            app:cardUseCompatPadding="true"
+            app:contentPadding="15dp">
 
             <LinearLayout
                 android:layout_width="match_parent"

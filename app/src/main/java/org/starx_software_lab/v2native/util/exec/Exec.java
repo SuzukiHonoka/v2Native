@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 public class Exec {
     //
-    public static String TAG = "EXEC";
+    public static final String TAG = "EXEC";
     //
     private final ArrayList<IDataReceived> dr;
     //
@@ -31,19 +31,15 @@ public class Exec {
     private DataOutputStream ops;
     private InputStream ips;
     private InputStream eIps;
-    //
 
-    public Exec(String... program) {
-        if (program.length == 0) {
-            main = "su";
-        } else {
-            main = program[0];
-        }
+
+    public Exec() {
+        main = "su";
         dr = new ArrayList<>();
         init();
     }
 
-    public void init() {
+    private void init() {
         Log.d(TAG, "init: " + System.identityHashCode(this));
         reading = new Thread[3];
         try {
