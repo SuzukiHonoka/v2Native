@@ -9,7 +9,12 @@ import org.starx_software_lab.v2native.util.Utils
 class OnBootCompleted : BroadcastReceiver() {
     override fun onReceive(v: Context, p1: Intent) {
         if (p1.action != Intent.ACTION_BOOT_COMPLETED) return
-        if (!Utils.getPerfBool(v, "autoStart", false) || !Utils.checkConfig()) return
+        if (!Utils.getPerfBool(
+                v,
+                "autoStart",
+                false
+            ) || Utils.updateConfigPath(v) || !Utils.checkConfig()
+        ) return
         if (!Utils.serviceAgent(v)) {
             Toast.makeText(v, "无法启动服务", Toast.LENGTH_SHORT).show()
             return

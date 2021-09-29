@@ -310,6 +310,11 @@ class Utils {
             val je = JsonParser.parseString(s)
             return gson.toJson(je)
         }
+
+        fun updateConfigPath(v: Context): Boolean {
+            configPath = v.filesDir.absolutePath + "/config.json"
+            return true
+        }
     }
 
     class Commands {
