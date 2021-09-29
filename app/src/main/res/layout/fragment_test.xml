@@ -1,66 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".ui.test.TestFragment">
 
-    <androidx.cardview.widget.CardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="10dp"
-        app:cardElevation="5dp"
-        app:cardUseCompatPadding="true"
-        app:contentPadding="15dp">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/terminal_command"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/terminal"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_marginTop="5dp"
-                android:gravity="top|start"
-                android:hint="@string/enter_your_commands_here"
-                android:importantForAutofill="no"
-                android:inputType="textMultiLine"
-                android:scrollbars="vertical" />
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="5dp"
+            app:cardUseCompatPadding="true"
+            app:contentPadding="15dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/network_connection"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/outgoing_ip" />
+
+                    <TextView
+                        android:id="@+id/network_ip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="@string/n_a"
+                        tools:ignore="RelativeOverlap" />
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/google_204_tls" />
+
+                    <TextView
+                        android:id="@+id/network_delay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="@string/n_a"
+                        tools:ignore="RelativeOverlap" />
+                </RelativeLayout>
+
 
                 <Button
-                    android:id="@+id/execute"
+                    android:id="@+id/test"
                     style="@android:style/Widget.Material.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/execute" />
+                    android:text="@string/check" />
 
-                <Button
-                    android:id="@+id/clear"
-                    style="@android:style/Widget.Material.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/clear" />
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-</LinearLayout>
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="5dp"
+            app:cardUseCompatPadding="true"
+            app:contentPadding="15dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/terminal_command"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/terminal"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginTop="5dp"
+                    android:gravity="top|start"
+                    android:hint="@string/enter_your_commands_here"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine"
+                    android:scrollbars="vertical" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/execute"
+                        style="@android:style/Widget.Material.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/execute" />
+
+                    <Button
+                        android:id="@+id/clear"
+                        style="@android:style/Widget.Material.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/clear" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</ScrollView>

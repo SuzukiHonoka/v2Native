@@ -29,4 +29,11 @@
     <string name="enter_your_commands_here">Enter your commands here..</string>
     <string name="currentConfiguration">当前配置</string>
     <string name="check">CHECK</string>
+    <string name="test">测试</string>
+    <string name="network_connection">网络连接</string>
+    <string name="outgoing_ip">出口IP</string>
+    <string name="_127_0_0_1">127.0.0.1</string>
+    <string name="google_204_tls">Google_204 延迟 (TLS)</string>
+    <string name="_0ms">0ms</string>
+    <string name="n_a">N/A</string>
 </resources>

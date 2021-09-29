@@ -20,6 +20,8 @@ import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
 import java.io.File
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.LocalDate
 
 
@@ -314,6 +316,26 @@ class Utils {
         fun updateConfigPath(v: Context): Boolean {
             configPath = v.filesDir.absolutePath + "/config.json"
             return true
+        }
+
+        fun retrieveContent(url: String): String {
+            try {
+                (URL(url).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 2 * 1000
+                    readTimeout = 2 * 1000
+                    requestMethod = "GET"
+                }.also { r ->
+                    if (r.responseCode == 204) {
+                        return "204"
+                    }
+                    if (r.responseCode != 200) {
+                        return ""
+                    }
+                    return r.inputStream.bufferedReader().readText()
+                }
+            } catch (e: Exception) {
+                return ""
+            }
         }
     }
 
