@@ -54,7 +54,7 @@ class TestFragment : Fragment() {
         val ip = root.findViewById<TextView>(R.id.network_ip)
         val delay = root.findViewById<TextView>(R.id.network_delay)
         root.findViewById<Button>(R.id.test).setOnClickListener { v ->
-            Snackbar.make(v, "TEST THREAD STARTED", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(v, "已启动测试线程..", Snackbar.LENGTH_SHORT).show()
             Thread {
                 var tmpIP = ""
                 var tmpDelay: Long = 0
