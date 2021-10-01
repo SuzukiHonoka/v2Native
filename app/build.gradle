@@ -11,8 +11,8 @@ android {
         applicationId "org.starx_software_lab.v2native"
         minSdkVersion 28
         targetSdkVersion 31
-        versionCode 10203
-        versionName '1.2.3'
+        versionCode 10204
+        versionName '1.2.4'
         proguardFiles
     }
 
