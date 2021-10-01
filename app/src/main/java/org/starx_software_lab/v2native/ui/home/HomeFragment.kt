@@ -57,8 +57,9 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         })
         v = inflater.inflate(R.layout.fragment_home, container, false).also {
             it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener(this)
-            it.findViewById<Button>(R.id.load).setOnClickListener(this)
-            it.findViewById<Button>(R.id.check).setOnClickListener(this)
+            setOf(R.id.load, R.id.check).forEach { b ->
+                it.findViewById<Button>(b).setOnClickListener(this)
+            }
             button = it.findViewById(R.id.start)
             button.setOnClickListener(this)
             button.setOnLongClickListener(this)
