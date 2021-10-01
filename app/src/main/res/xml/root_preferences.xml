@@ -1,4 +1,5 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory app:title="SERVICE">
         <SwitchPreferenceCompat
@@ -24,12 +25,26 @@
 
         <SwitchPreferenceCompat
             app:key="allowOther"
-            app:summary="Allow other device go though the chain, this is useful if you plan to share the network."
+            app:summary="allow other device go though the chain, this is useful if you plan to share the network."
             app:title="Allow Other Device" />
 
     </PreferenceCategory>
 
     <PreferenceCategory app:title="IPTABLES">
+
+        <ListPreference
+            android:entries="@array/type"
+            android:entryValues="@array/type"
+            android:title="Type"
+            app:defaultValue="REDIRECT"
+            app:key="type"
+            app:summary="type to transfer traffic" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="dns"
+            app:summary="weather to bypass dns or not."
+            app:title="Bypass DNS" />
 
         <EditTextPreference
             app:key="addition"

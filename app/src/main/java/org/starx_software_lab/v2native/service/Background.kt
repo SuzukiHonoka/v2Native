@@ -80,7 +80,7 @@ class Background : Service() {
                         }
                     }
                 })
-                it.exec("nproc")
+                //it.exec("nproc")
             }
             iptables = Utils.Iptables(serverIP, this).apply {
                 setup()
