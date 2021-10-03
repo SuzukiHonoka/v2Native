@@ -13,7 +13,7 @@ class OnBootCompleted : BroadcastReceiver() {
                 v,
                 "autoStart",
                 false
-            ) || Utils.updateConfigPath(v) || !Utils.checkConfig()
+            ) || !Utils.updateConfigPath(v) || !Utils.checkConfig()
         ) return
         if (!Utils.serviceAgent(v)) {
             Toast.makeText(v, "无法启动服务", Toast.LENGTH_SHORT).show()
