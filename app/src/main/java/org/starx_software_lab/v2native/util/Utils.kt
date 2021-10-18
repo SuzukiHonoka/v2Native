@@ -10,11 +10,12 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.preference.PreferenceManager
-import com.google.gson.*
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import org.starx_software_lab.v2native.MainActivity
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
-import org.starx_software_lab.v2native.ui.home.HomeFragment
+import org.starx_software_lab.v2native.util.Config.Companion.getServerIP
 import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
 import java.io.File
@@ -26,20 +27,13 @@ import java.time.LocalDate
 
 class Utils {
     companion object {
-        var configPath = ""
         private const val TAG = "Util"
         private val preloads = arrayOf(
             "v2ray",
             "v2ctl",
             "geosite.dat",
             "geoip.dat",
-            "ipt2socks",
             "cn.zone"
-        )
-        private val dns = arrayOf(
-            "8.8.8.8",
-            "8.8.4.4",
-            "1.1.1.1"
         )
         private val exp = LocalDate.parse("2022-09-15")
         fun checkEXP() = LocalDate.now() >= exp
@@ -147,140 +141,13 @@ class Utils {
         }
 
         fun cancel(context: Context) =
-            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(1)
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .cancel(1)
 
-        private fun writeConfig(config: String) =
-            File(configPath).writeText(config)
-
-        fun reWriteConfig(v: Context, s: String): Boolean {
-            val obj = JsonParser.parseString(s).asJsonObject.apply {
-                remove("inbounds")
-                remove("dns")
-                remove("policy")
-                remove("routing")
-            }.also { els ->
-                getServerBlock(els).also { el ->
-                    if (el == null) {
-                        Log.d(TAG, "reWriteConfig: 未找到可用出站配置")
-                        return false
-                    }
-                    els.remove("outbounds")
-                    els.add("outbounds", JsonArray().apply {
-                        add(el)
-                    })
-                }
-            }
-            val sniffing = JsonObject().apply {
-                val protocols = JsonArray().apply {
-                    add("tls")
-                    add("http")
-                }
-                add("destOverride", protocols)
-                addProperty("enabled", true)
-            }
-            val socks = JsonObject().apply {
-                addProperty(
-                    "listen",
-                    if (getPerfBool(v, "export", false)) "0.0.0.0" else "127.0.0.1"
-                )
-                addProperty("port", 10808)
-                addProperty("protocol", "socks")
-                addProperty("tag", "socks")
-                add("sniffing", sniffing)
-            }
-            val tproxy = JsonObject().apply {
-                addProperty("port", 12345)
-                addProperty("protocol", "dokodemo-door")
-                addProperty("tag", "tproxy")
-                add("sniffing", sniffing)
-                add("settings", JsonObject().apply {
-                    addProperty("network", "tcp,udp")
-                    addProperty("followRedirect", true)
-                })
-                add("streamSettings", JsonObject().apply {
-                    add("sockopt", JsonObject().apply {
-                        if (isTproxyEnabled(v)) {
-                            addProperty("tproxy", "tproxy")
-                        }
-                    })
-                })
-            }
-            val dns = JsonObject().apply {
-                val servers = JsonArray().apply {
-                    dns.forEach { s ->
-                        add(s)
-                    }
-                }
-                add("servers", servers)
-            }
-            val routing = JsonObject().apply {
-                addProperty("domainStrategy", "IPIfNonMatch")
-                addProperty("domainMatcher", "mph")
-                val rules = JsonArray().apply {
-                    val proxyDNS = JsonObject().apply {
-                        val dnsIP = JsonArray().apply {
-                            Utils.dns.forEach { s ->
-                                add(s)
-                            }
-                        }
-                        add("ip", dnsIP)
-                        addProperty("outboundTag", "proxy")
-                        addProperty("port", 53)
-                        addProperty("type", "field")
-                    }
-                    add(proxyDNS)
-                }
-                add("rules", rules)
-            }
-            obj.add("dns", dns)
-            obj.add("routing", routing)
-            obj.add("inbounds", JsonArray().apply {
-                add(socks)
-                add(tproxy)
-            })
-            Log.d(HomeFragment.TAG, "formattedJson: $obj")
-            writeConfig(obj.toString())
-            return true
-        }
-
-        fun checkConfig() =
-            File(configPath).exists()
-
-        private fun getServerIP(): String? {
-            val obj =
-                JsonParser.parseString(File(configPath).readText()).asJsonObject
-            obj.getAsJsonArray("outbounds").forEach { els ->
-                if (els.asJsonObject.get("tag").asString == "proxy") {
-                    Log.d(HomeFragment.TAG, "parser: proxy outbound found!")
-                    val serverIP =
-                        els.asJsonObject.get("settings").asJsonObject.get("vnext").asJsonArray.get(0).asJsonObject.get(
-                            "address"
-                        ).asString
-                    Log.d(HomeFragment.TAG, "parser: address -> $serverIP")
-                    return serverIP
-                }
-            }
-            return null
-        }
-
-        private fun getServerBlock(json: JsonObject): JsonElement? {
-            json.getAsJsonArray("outbounds").forEach { els ->
-                if (els.asJsonObject.get("tag").asString == "proxy") {
-//                    val serverIP =
-//                        els.asJsonObject.get("settings").asJsonObject.get("vnext")
-//                            .asJsonArray.get(0).asJsonObject.get("address").asString
-//                    els.asJsonObject.get("settings").asJsonObject.get("vnext")
-//                        .asJsonArray.get(0).asJsonObject.remove("address")
-//                    val address = InetAddress.getByName(serverIP).hostAddress
-//                    els.asJsonObject.get("settings").asJsonObject.get("vnext")
-//                        .asJsonArray.get(0).asJsonObject.addProperty("address",address)
-//                    Log.d(TAG, "getServerBlock: $serverIP -> $address")
-                    Log.d(HomeFragment.TAG, "parser: proxy outbound found!")
-                    return els
-                }
-            }
-            return null
-        }
+//        public fun generateServerBlock(uuid: String, server: String, port: String, host: String,
+//                                       path: String, sni: String){
+//            return
+//        }
 
         fun cleanLogs() {
             Iptables.logs = ""
@@ -290,16 +157,6 @@ class Utils {
             Iptables.logs += "$msg\n"
         }
 
-        fun sleep(t: Long): Boolean {
-            try {
-                Thread.sleep(t)
-            } catch (e: InterruptedException) {
-                Log.d(Iptables.TAG, "sleep: thread killed")
-                Thread.currentThread().interrupt()
-                return false
-            }
-            return true
-        }
 
         fun getPerfStr(context: Context, key: String, def: String): String =
             PreferenceManager.getDefaultSharedPreferences(context).getString(key, def)!!
@@ -328,11 +185,6 @@ class Utils {
             return gson.toJson(je)
         }
 
-        fun updateConfigPath(v: Context): Boolean {
-            configPath = v.filesDir.absolutePath + "/config.json"
-            return true
-        }
-
         fun retrieveContent(url: String): String {
             try {
                 (URL(url).openConnection() as HttpURLConnection).apply {
@@ -359,237 +211,237 @@ class Utils {
     }
 
 
-    class Iptables(private val ip: String, private val context: Context) {
-
-        companion object {
-            const val TAG = "IPTABLES"
-            const val chain = "STARX"
-            val reserved = setOf(
-                "0.0.0.0/8",
-                "10.0.0.0/8",
-                "100.64.0.0/10",
-                "127.0.0.0/8",
-                "169.254.0.0/16",
-                "172.16.0.0/12",
-                "192.0.0.0/24",
-                "192.0.2.0/24",
-                "192.88.99.0/24",
-                "192.168.0.0/16",
-                "198.18.0.0/15",
-                "198.51.100.0/24",
-                "203.0.113.0/24",
-                "224.0.0.0/4",
-                "233.252.0.0/24",
-                "240.0.0.0/4",
-                "255.255.255.255/32"
-            )
-            var logs = ""
-            private val tproxyCMD = setOf(
-                "iptables -t mangle -A $chain -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1",
-                "iptables -t mangle -A $chain -p udp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1"
-            )
-            private val setupRuleCMD = arrayOf(
-                "ip rule add fwmark 1 table 100",
-                "ip route add local 0.0.0.0/0 dev lo table 100"
-            )
-            private const val checkRuleCMD = "ip rule list|grep \"lookup 100\"||echo \"fail\"\n"
-            private const val setupTproxyCMD =
-                "iptables -t mangle -A OUTPUT -p tcp -j MARK --set-mark 1"
-        }
-
-        private var terminal: Exec = Exec()
-        private var initialized: Boolean = false
-        private var done: Boolean = false
-        private var initing = false
-
-        // Cmd
-        private val tproxy = isTproxyEnabled(context)
-        private val table = if (tproxy) "mangle" else "nat"
-        private val listCMD = "iptables -t $table -L $chain 1"
-        private val outputCMD = "iptables -t $table -L OUTPUT"
-        private var initCMD = arrayOf(
-            "iptables -t $table -N $chain",
-            "iptables -t $table -A $chain -d $ip -j RETURN"
-            //"iptables -t $table -A $chain -p tcp -j RETURN -m mark --mark 0xff"
-        )
-        private val bypassDNS = setOf(
-            "iptables -t $table -I $chain 2 -p tcp --dport 53 -j RETURN",
-            "iptables -t $table -I $chain 2 -p udp --dport 53 -j RETURN"
-        )
-        private val applyCMD = arrayOf(
-            "iptables -t $table -A OUTPUT -p tcp -j $chain",
-            "iptables -t $table -A PREROUTING -p tcp -j $chain"
-        )
-        private val cleanHard = arrayOf(
-            "iptables -t $table -F $chain",
-            "iptables -t $table -X $chain",
-            "killall v2ray",
-            "killall ipt2socks",
-            //"killall iptables"
-        )
-
-        fun setup() {
-            terminal.setListener(object : IDataReceived {
-                override fun onFailed() {
-                    Log.d(TAG, "onFailed: setup")
-                }
-
-                override fun onData(data: String) {
-                    Log.d(TAG, "${terminal.lastCmd} -> $data")
-                    updateLogs(data)
-                    if (data.contains("lock")) {
-                        val cmd = terminal.lastCmd
-                        terminal.exec("killall iptables")
-                        if (!sleep(300)) return
-                        terminal.exec(cmd)
-                        return
-                    }
-                    when (terminal.lastCmd) {
-                        checkRuleCMD -> {
-                            if (data.contains("fail")) {
-                                setupRuleCMD.forEach {
-                                    terminal.exec(it)
-                                }
-                            }
-                        }
-                        listCMD -> {
-                            if (data.contains("No")) {
-                                Log.d(TAG, "onData: need init")
-                                initialized = false
-                                init()
-                                return
-                            }
-                            terminal.exec("iptables -t $table -D $chain 1")
-                            terminal.exec("iptables -t $table -I $chain 1 -d $ip -j RETURN")
-                            initialized = true
-                        }
-                        outputCMD -> {
-                            if (!data.contains(chain)) {
-                                Log.d(TAG, "onData: need apply")
-                                if (tproxy) {
-                                    terminal.exec(setupTproxyCMD)
-                                }
-                                if (getPerfBool(context, "allowOther", false)) {
-                                    if (!tproxy) {
-                                        applyCMD.forEach {
-                                            terminal.exec(it)
-                                        }
-                                    } else {
-                                        terminal.exec(applyCMD[1])
-                                    }
-                                } else {
-                                    if (tproxy) {
-                                        terminal.exec(applyCMD[1])
-                                        //TODO("RETURN SOURCE IN RESERVE")
-                                    } else {
-                                        terminal.exec(applyCMD[0])
-                                    }
-                                }
-                                done = true
-                                updateLogs("iptables 分流规则应用完成")
-                            }
-                        }
-                    }
-                }
-            })
-            clean(false)
-            if (!sleep(500)) return
-            terminal.exec(listCMD)
-            var wait = 0
-            while (!initialized) {
-                Log.d(TAG, "setup: init waiting")
-                if (wait > 600) {
-                    Log.d(TAG, "setup: init failed")
-                    notify(context, "服务正在运行", "初始化失败")
-                    break
-                }
-                if (!sleep(1000)) return
-                wait++
-            }
-            terminal.exec(outputCMD)
-            notify(context, "服务正在运行", "等待分流链被应用..")
-            var timeout = 30
-            getPerfInt(context, "timeout", 30).also {
-                it.also { t ->
-                    if (t >= 30) {
-                        timeout = t
-                    }
-                }
-            }
-            wait = 0
-            while (!done) {
-                if (wait > timeout) {
-                    Log.d(TAG, "setup: force apply")
-                    applyCMD.forEach {
-                        terminal.exec(it)
-                    }
-                    break
-                }
-                Log.d(TAG, "setup: wait done")
-                if (!sleep(1000)) return
-                wait++
-            }
-            notify(context, "服务正在运行", "享受极速科学上网的快乐吧~")
-        }
-
-        fun init() {
-            initing = true
-            initCMD.forEach {
-                terminal.exec(it)
-            }
-            if (getPerfBool(context, "dns", true)) {
-                bypassDNS.forEach {
-                    terminal.exec(it)
-                }
-            }
-            reserved.forEach {
-                terminal.exec("iptables -t $table -A $chain -d $it -j RETURN")
-            }
-            getPerfStr(context, "addition", "").split(",").forEach {
-                if (it.isNotEmpty()) terminal.exec("iptables -t nat -A $chain -d $it -j RETURN")
-            }
-            val start = System.currentTimeMillis()
-            File(context.filesDir.absolutePath, "cn.zone").readLines().also {
-                it.forEachIndexed { index, s ->
-                    val i = index + 1
-                    terminal.exec("iptables -t $table -A $chain -d $s -j RETURN")
-                    if (i % 50 == 0 || i == it.count()) {
-                        notifyProgress(
-                            context,
-                            "正在应用国内分流规则",
-                            "应用中.. ($i/${it.count()})",
-                            it.count(),
-                            i
-                        )
-                        if (i == it.count()) {
-                            notifyProgress(context, "应用国内分流规则完成", "应用完成", it.count(), index)
-                            updateLogs("inserting china rule sets took: ${(System.currentTimeMillis() - start) / 1000}s")
-                        }
-                    }
-                }
-            }
-            if (tproxy) {
-                tproxyCMD.forEach {
-                    terminal.exec(it)
-                }
-                if (!sleep(500)) return
-                terminal.exec(checkRuleCMD)
-            } else {
-                terminal.exec("iptables -t nat -A $chain -p tcp -j REDIRECT --to-ports 12345")
-            }
-            initialized = true
-            Log.d(TAG, "init: done")
-        }
-
-        fun clean(hard: Boolean) {
-            Log.d(TAG, "clean: clean")
-            applyCMD.forEach {
-                terminal.exec(it.replace("-A", "-D"))
-            }
-            terminal.exec(setupTproxyCMD.replace("-A", "-D"))
-            if (hard) cleanHard.forEach {
-                terminal.exec(it)
-            }
-        }
-    }
+//    class Iptables(private val ip: String, private val context: Context) {
+//
+//        companion object {
+//            const val TAG = "IPTABLES"
+//            const val chain = "STARX"
+//            val reserved = setOf(
+//                "0.0.0.0/8",
+//                "10.0.0.0/8",
+//                "100.64.0.0/10",
+//                "127.0.0.0/8",
+//                "169.254.0.0/16",
+//                "172.16.0.0/12",
+//                "192.0.0.0/24",
+//                "192.0.2.0/24",
+//                "192.88.99.0/24",
+//                "192.168.0.0/16",
+//                "198.18.0.0/15",
+//                "198.51.100.0/24",
+//                "203.0.113.0/24",
+//                "224.0.0.0/4",
+//                "233.252.0.0/24",
+//                "240.0.0.0/4",
+//                "255.255.255.255/32"
+//            )
+//            var logs = ""
+//            private val tproxyCMD = setOf(
+//                "iptables -t mangle -A $chain -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1",
+//                "iptables -t mangle -A $chain -p udp -j TPROXY --on-ip 127.0.0.1 --on-port 12345 --tproxy-mark 1"
+//            )
+//            private val setupRuleCMD = arrayOf(
+//                "ip rule add fwmark 1 table 100",
+//                "ip route add local 0.0.0.0/0 dev lo table 100"
+//            )
+//            private const val checkRuleCMD = "ip rule list|grep \"lookup 100\"||echo \"fail\"\n"
+//            private const val setupTproxyCMD =
+//                "iptables -t mangle -A OUTPUT -p tcp -j MARK --set-mark 1"
+//        }
+//
+//        private var terminal: Exec = Exec()
+//        private var initialized: Boolean = false
+//        private var done: Boolean = false
+//        private var initing = false
+//
+//        // Cmd
+//        private val tproxy = isTproxyEnabled(context)
+//        private val table = if (tproxy) "mangle" else "nat"
+//        private val listCMD = "iptables -t $table -L $chain 1"
+//        private val outputCMD = "iptables -t $table -L OUTPUT"
+//        private var initCMD = arrayOf(
+//            "iptables -t $table -N $chain",
+//            "iptables -t $table -A $chain -d $ip -j RETURN"
+//            //"iptables -t $table -A $chain -p tcp -j RETURN -m mark --mark 0xff"
+//        )
+//        private val bypassDNS = setOf(
+//            "iptables -t $table -I $chain 2 -p tcp --dport 53 -j RETURN",
+//            "iptables -t $table -I $chain 2 -p udp --dport 53 -j RETURN"
+//        )
+//        private val applyCMD = arrayOf(
+//            "iptables -t $table -A OUTPUT -p tcp -j $chain",
+//            "iptables -t $table -A PREROUTING -p tcp -j $chain"
+//        )
+//        private val cleanHard = arrayOf(
+//            "iptables -t $table -F $chain",
+//            "iptables -t $table -X $chain",
+//            "killall v2ray",
+//            "killall ipt2socks",
+//            //"killall iptables"
+//        )
+//
+//        fun setup() {
+//            terminal.setListener(object : IDataReceived {
+//                override fun onFailed() {
+//                    Log.d(TAG, "onFailed: setup")
+//                }
+//
+//                override fun onData(data: String) {
+//                    Log.d(TAG, "${terminal.lastCmd} -> $data")
+//                    updateLogs(data)
+//                    if (data.contains("lock")) {
+//                        val cmd = terminal.lastCmd
+//                        terminal.exec("killall iptables")
+//                        if (!sleep(300)) return
+//                        terminal.exec(cmd)
+//                        return
+//                    }
+//                    when (terminal.lastCmd) {
+//                        checkRuleCMD -> {
+//                            if (data.contains("fail")) {
+//                                setupRuleCMD.forEach {
+//                                    terminal.exec(it)
+//                                }
+//                            }
+//                        }
+//                        listCMD -> {
+//                            if (data.contains("No")) {
+//                                Log.d(TAG, "onData: need init")
+//                                initialized = false
+//                                init()
+//                                return
+//                            }
+//                            terminal.exec("iptables -t $table -D $chain 1")
+//                            terminal.exec("iptables -t $table -I $chain 1 -d $ip -j RETURN")
+//                            initialized = true
+//                        }
+//                        outputCMD -> {
+//                            if (!data.contains(chain)) {
+//                                Log.d(TAG, "onData: need apply")
+//                                if (tproxy) {
+//                                    terminal.exec(setupTproxyCMD)
+//                                }
+//                                if (getPerfBool(context, "allowOther", false)) {
+//                                    if (!tproxy) {
+//                                        applyCMD.forEach {
+//                                            terminal.exec(it)
+//                                        }
+//                                    } else {
+//                                        terminal.exec(applyCMD[1])
+//                                    }
+//                                } else {
+//                                    if (tproxy) {
+//                                        terminal.exec(applyCMD[1])
+//                                        //TODO("RETURN SOURCE IN RESERVE")
+//                                    } else {
+//                                        terminal.exec(applyCMD[0])
+//                                    }
+//                                }
+//                                done = true
+//                                updateLogs("iptables 分流规则应用完成")
+//                            }
+//                        }
+//                    }
+//                }
+//            })
+//            clean(false)
+//            if (!sleep(500)) return
+//            terminal.exec(listCMD)
+//            var wait = 0
+//            while (!initialized) {
+//                Log.d(TAG, "setup: init waiting")
+//                if (wait > 600) {
+//                    Log.d(TAG, "setup: init failed")
+//                    notify(context, "服务正在运行", "初始化失败")
+//                    break
+//                }
+//                if (!sleep(1000)) return
+//                wait++
+//            }
+//            terminal.exec(outputCMD)
+//            notify(context, "服务正在运行", "等待分流链被应用..")
+//            var timeout = 30
+//            getPerfInt(context, "timeout", 30).also {
+//                it.also { t ->
+//                    if (t >= 30) {
+//                        timeout = t
+//                    }
+//                }
+//            }
+//            wait = 0
+//            while (!done) {
+//                if (wait > timeout) {
+//                    Log.d(TAG, "setup: force apply")
+//                    applyCMD.forEach {
+//                        terminal.exec(it)
+//                    }
+//                    break
+//                }
+//                Log.d(TAG, "setup: wait done")
+//                if (!sleep(1000)) return
+//                wait++
+//            }
+//            notify(context, "服务正在运行", "系统启动正常~")
+//        }
+//
+//        fun init() {
+//            initing = true
+//            initCMD.forEach {
+//                terminal.exec(it)
+//            }
+//            if (getPerfBool(context, "dns", true)) {
+//                bypassDNS.forEach {
+//                    terminal.exec(it)
+//                }
+//            }
+//            reserved.forEach {
+//                terminal.exec("iptables -t $table -A $chain -d $it -j RETURN")
+//            }
+//            getPerfStr(context, "addition", "").split(",").forEach {
+//                if (it.isNotEmpty()) terminal.exec("iptables -t nat -A $chain -d $it -j RETURN")
+//            }
+//            val start = System.currentTimeMillis()
+//            File(context.filesDir.absolutePath, "cn.zone").readLines().also {
+//                it.forEachIndexed { index, s ->
+//                    val i = index + 1
+//                    terminal.exec("iptables -t $table -A $chain -d $s -j RETURN")
+//                    if (i % 50 == 0 || i == it.count()) {
+//                        notifyProgress(
+//                            context,
+//                            "正在应用国内分流规则",
+//                            "应用中.. ($i/${it.count()})",
+//                            it.count(),
+//                            i
+//                        )
+//                        if (i == it.count()) {
+//                            notifyProgress(context, "应用国内分流规则完成", "应用完成", it.count(), index)
+//                            updateLogs("inserting china rule sets took: ${(System.currentTimeMillis() - start) / 1000}s")
+//                        }
+//                    }
+//                }
+//            }
+//            if (tproxy) {
+//                tproxyCMD.forEach {
+//                    terminal.exec(it)
+//                }
+//                if (!sleep(500)) return
+//                terminal.exec(checkRuleCMD)
+//            } else {
+//                terminal.exec("iptables -t nat -A $chain -p tcp -j REDIRECT --to-ports 12345")
+//            }
+//            initialized = true
+//            Log.d(TAG, "init: done")
+//        }
+//
+//        fun clean(hard: Boolean) {
+//            Log.d(TAG, "clean: clean")
+//            applyCMD.forEach {
+//                terminal.exec(it.replace("-A", "-D"))
+//            }
+//            terminal.exec(setupTproxyCMD.replace("-A", "-D"))
+//            if (hard) cleanHard.forEach {
+//                terminal.exec(it)
+//            }
+//        }
+//    }
 }

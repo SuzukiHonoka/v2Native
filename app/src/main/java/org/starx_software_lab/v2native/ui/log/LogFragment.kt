@@ -8,7 +8,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import org.starx_software_lab.v2native.R
-import org.starx_software_lab.v2native.util.Utils
+import org.starx_software_lab.v2native.util.Iptables
 
 class LogFragment : Fragment() {
 
@@ -19,13 +19,16 @@ class LogFragment : Fragment() {
     ): View? {
         val root = inflater.inflate(R.layout.fragment_log, container, false)
         val textView: TextView = root.findViewById(R.id.log)
-        textView.text = Utils.Iptables.logs
+        textView.text = Iptables.logs
         root.findViewById<Button>(R.id.refresh).setOnClickListener {
-            textView.text = Utils.Iptables.logs
+            val lines = Iptables.logs.split("\n")
+            val start = if (lines.size > 1000) lines.size - 1000 else 0
+            val reduced = lines.subList(start, lines.size)
+            textView.text = reduced.joinToString("\n")
         }
         root.findViewById<Button>(R.id.clear).setOnClickListener {
             textView.text = ""
-            Utils.Iptables.logs = ""
+            Iptables.logs = ""
         }
         return root
     }

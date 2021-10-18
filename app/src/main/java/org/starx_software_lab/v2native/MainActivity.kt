@@ -1,6 +1,9 @@
 package org.starx_software_lab.v2native
 
 import android.annotation.SuppressLint
+import android.content.ClipDescription.MIMETYPE_TEXT_PLAIN
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,6 +12,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -24,6 +28,7 @@ import com.google.android.material.snackbar.Snackbar
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
 import org.starx_software_lab.v2native.ui.settings.SettingsActivity
+import org.starx_software_lab.v2native.util.Config
 import org.starx_software_lab.v2native.util.Utils
 
 
@@ -38,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Utils.updateConfigPath(applicationContext)
+        Config.updateConfigPath(applicationContext)
         setContentView(R.layout.activity_main)
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -63,6 +68,19 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("BatteryLife")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_quick -> {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                if (!clipboard.hasPrimaryClip() || !clipboard.primaryClipDescription!!.hasMimeType(
+                        MIMETYPE_TEXT_PLAIN
+                    )
+                ) {
+                    Toast.makeText(applicationContext, "剪贴板数据无效", Toast.LENGTH_SHORT).show()
+                    return true
+                }
+                val data = clipboard.primaryClip!!.getItemAt(0).text
+                Toast.makeText(applicationContext, "剪贴板数据: $data", Toast.LENGTH_SHORT).show()
+                true
+            }
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true

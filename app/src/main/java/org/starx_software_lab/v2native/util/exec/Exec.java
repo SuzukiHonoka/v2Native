@@ -4,11 +4,12 @@ package org.starx_software_lab.v2native.util.exec;
 import android.util.Log;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.ArrayList;
 
@@ -17,55 +18,41 @@ public class Exec {
     //
     public static final String TAG = "EXEC";
     //
-    private final ArrayList<IDataReceived> dr;
-    //
-    private final String main;
-    //
+    private final ArrayList<IDataReceived> dr = new ArrayList<>();
+    // threads
+    private final Thread[] readers;
+    // flags
     public boolean state;
-    //
     public String lastCmd;
     //
-    private Thread[] reading;
-    //
     private Process su;
-    private DataOutputStream ops;
+    //    private OutputStream ops;
     private InputStream ips;
     private InputStream eIps;
+    private BufferedWriter ops;
 
 
     public Exec() {
-        main = "su";
-        dr = new ArrayList<>();
-        init();
-    }
-
-    private void init() {
-        Log.d(TAG, "init: " + System.identityHashCode(this));
-        reading = new Thread[3];
+        readers = new Thread[3]; // 0: read exit 1: read normal stream 2: read error stream
         try {
+            // open su terminal
+            String main = "su";
             su = Runtime.getRuntime().exec(main);
         } catch (IOException e) {
             state = false;
-            Log.d(TAG, "init: " + e.toString());
+            Log.d(TAG, "open su terminal failed");
+            e.printStackTrace();
             return;
         }
+        // first state
         state = true;
-        new Thread(() -> {
-            try {
-                su.waitFor();
-                if (state) state = false;
-                if (lastCmd == null) dr.forEach(IDataReceived::onFailed);
-                Log.d(TAG, "Exec: down");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
-        Log.d(TAG, "Exec: " + state);
+        Log.d(TAG, "Exec: terminal started");
         ips = su.getInputStream();
         eIps = su.getErrorStream();
-        ops = new DataOutputStream(su.getOutputStream());
-        reading[0] = new Thread(this::read);
-        reading[0].start();
+//        ops = su.getOutputStream();
+        ops = new BufferedWriter(new OutputStreamWriter(su.getOutputStream()));
+        // start reading threads
+        this.read();
     }
 
     private void streamReader(Reader sr) {
@@ -76,8 +63,8 @@ public class Exec {
                 r.append(lines).append("\n");
                 //Log.d(TAG, "read: ["+lastCmd+"] -> "+lines);
                 if (!reader.ready()) {
-                    StringBuilder finalR = r;
-                    dr.forEach(dr -> dr.onData(finalR.toString().replaceAll("\u001B\\[[;\\d]*m", "")));
+                    String rx = r.toString().replaceAll("\u001B\\[[;\\d]*m", "");
+                    dr.forEach(dr -> dr.onData(rx));
                     r = new StringBuilder();
                     //Log.d(TAG, "read: ["+lastCmd+"] -> done");
                 }
@@ -85,6 +72,7 @@ public class Exec {
         } catch (InterruptedIOException e) {
             state = false;
         } catch (IOException e) {
+            // trigger on failed
             state = false;
             dr.forEach(IDataReceived::onFailed);
             e.printStackTrace();
@@ -96,42 +84,71 @@ public class Exec {
     }
 
     public void read() {
+        // do not read if state down
         if (!state) return;
-        reading[1] = new Thread(() -> {
+        readers[0] = new Thread(() -> {
+            Log.d(TAG, "read: ready to read exit");
+            try {
+                // wait for su terminal close
+                su.waitFor();
+                // su down
+                state = false;
+                // if pre down, trigger on failed
+                if (lastCmd == null) dr.forEach(IDataReceived::onFailed);
+                Log.d(TAG, "Exec: down");
+            } catch (InterruptedException e) {
+                // receive signal
+                // e.printStackTrace();
+            }
+        });
+        readers[0].start();
+        readers[1] = new Thread(() -> {
             Log.d(TAG, "read: ready to read normal");
             streamReader(new InputStreamReader(ips));
         });
-        reading[1].start();
-        reading[2] = new Thread(() -> {
+        readers[1].start();
+        readers[2] = new Thread(() -> {
             Log.d(TAG, "read: ready to read error");
             streamReader(new InputStreamReader(eIps));
         });
-        reading[2].start();
-
+        readers[2].start();
         Log.d(TAG, "read: threads started");
     }
 
-    public void exec(String cmd) throws IOException {
-        if (!state) return;
+    public void exec(String cmd) {
+        if (!state) {
+            Log.d(TAG, "exec: reject <= " + cmd);
+            return;
+        }
         final String tcd = cmd.trim();
         lastCmd = tcd;
         Log.d(TAG, "exec(): " + tcd);
-        ops.writeBytes(tcd + "\n");
-        ops.flush();
+        try {
+            ops.write(tcd);
+            ops.newLine();
+            ops.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void exit() throws IOException {
+    public void exit() {
         if (state) {
+            exec("exit");
             state = false;
             for (Thread t :
-                    reading) {
-                if (t != null) t.interrupt();
+                    readers) {
+                t.interrupt();
             }
-            exec("exit");
-            ips.close();
-            ops.close();
+            try {
+                ips.close();
+                ops.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             su.destroy();
-            Log.d(TAG, "exit: done");
+            Log.d(TAG, "Exec(" + System.identityHashCode(this) + "): done");
         }
     }
 }

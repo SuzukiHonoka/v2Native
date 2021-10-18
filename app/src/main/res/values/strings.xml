@@ -11,8 +11,8 @@
     <string name="action_about">About</string>
     <string name="channel_name">Background</string>
     <string name="channel_description">Background Service Status</string>
-    <string name="stop">STOP</string>
-    <string name="start">START</string>
+    <string name="stop">当前服务未运行</string>
+    <string name="start">当前服务正在运行</string>
     <string name="log_info">日志信息</string>
     <string name="refresh">REFRESH</string>
     <string name="clear">Clear</string>
@@ -36,4 +36,7 @@
     <string name="google_204_tls">Google_204 延迟 (TLS)</string>
     <string name="_0ms">0ms</string>
     <string name="n_a">N/A</string>
+    <string name="quick_import">Quick import</string>
+    <string name="status_icon">Status ICON</string>
+    <string name="from_clipboard">从剪贴板添加</string>
 </resources>

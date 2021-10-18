@@ -43,7 +43,7 @@
         <SwitchPreferenceCompat
             app:defaultValue="true"
             app:key="dns"
-            app:summary="weather to bypass dns or not."
+            app:summary="whether to bypass dns or not."
             app:title="Bypass DNS" />
 
         <EditTextPreference

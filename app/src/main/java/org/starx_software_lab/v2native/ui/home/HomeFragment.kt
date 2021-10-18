@@ -12,17 +12,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
+import org.starx_software_lab.v2native.util.Config
 import org.starx_software_lab.v2native.util.Utils
 import java.io.File
 import java.io.InputStreamReader
@@ -34,7 +37,9 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
     }
 
     private lateinit var receiver: Receiver
-    private lateinit var button: Button
+    private lateinit var start: CardView
+    private lateinit var flag: ImageView
+    private lateinit var status: TextView
     private lateinit var v: View
     private lateinit var resultLauncher: ActivityResultLauncher<Intent>
     private var allow: Boolean? = null
@@ -55,14 +60,19 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         homeViewModel.getAllow().observe(viewLifecycleOwner, {
             allow = it
         })
-        v = inflater.inflate(R.layout.fragment_home, container, false).also {
+        v = inflater.inflate(R.layout.fragment_home, container, false).also { it ->
             it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener(this)
             setOf(R.id.load, R.id.check).forEach { b ->
                 it.findViewById<Button>(b).setOnClickListener(this)
             }
-            button = it.findViewById(R.id.start)
-            button.setOnClickListener(this)
-            button.setOnLongClickListener(this)
+            start = it.findViewById(R.id.start)
+            start.setOnClickListener(this)
+            start.setOnLongClickListener(this)
+            flag = it.findViewById(R.id.flag)
+            status = it.findViewById(R.id.status)
+//            it.findViewById<CardView>(R.id.start).setOnClickListener {
+//                Snackbar.make(it,"oh shit", Snackbar.LENGTH_SHORT).show()
+//            }
         }
         resultLauncher = regResultLauncher()
         regBroadcastReceiver()
@@ -83,7 +93,7 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                         val reader = InputStreamReader(ips)
                         val s = reader.readText()
                         reader.close()
-                        if (Utils.reWriteConfig(requireContext(), s)) {
+                        if (Config.reWriteConfig(requireContext(), s)) {
                             Handler(v.context.mainLooper).post {
                                 Snackbar.make(v, "应用成功", Snackbar.LENGTH_SHORT).show()
                             }
@@ -116,13 +126,16 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         override fun onReceive(p0: Context?, p1: Intent) {
             Log.d("UI", "onReceive: pong!!")
             running = p1.getBooleanExtra("running", false)
-            button.text = if (running) getString(R.string.stop) else getString(R.string.start)
-            button.isEnabled = true
+            status.text = if (running) getString(R.string.start) else getString(R.string.stop)
             autoCheck = true
             if (running) {
+                start.setCardBackgroundColor(requireContext().getColor(R.color.green))
+                flag.background = requireContext().getDrawable(R.drawable.ic_md_check_circle)
                 Toast.makeText(context, "Service Running", Toast.LENGTH_SHORT).show()
                 return
             }
+            start.setCardBackgroundColor(requireContext().getColor(R.color.orange))
+            flag.background = requireContext().getDrawable(R.drawable.ic_md_warning)
             Toast.makeText(context, "Service Stopped", Toast.LENGTH_SHORT).show()
         }
     }
@@ -134,12 +147,15 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
                     return
                 }
-                if (!Utils.checkConfig()) {
+                if (!Config.checkConfig()) {
                     Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
                     return
                 }
+                if (!autoCheck) {
+                    Snackbar.make(v, "请等待初始化完毕", Snackbar.LENGTH_SHORT).show()
+                    return
+                }
                 autoCheck = false
-                button.isEnabled = false
                 Thread {
                     if (running) {
                         v.context.applicationContext.apply {
@@ -169,13 +185,13 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                 resultLauncher.launch(intent)
             }
             R.id.check -> {
-                if (!Utils.checkConfig()) {
+                if (!Config.checkConfig()) {
                     Snackbar.make(p0, "配置文件错误或不存在", Snackbar.LENGTH_SHORT).show()
                     return
                 }
                 val view = LayoutInflater.from(context).inflate(R.layout.log_view, null)
                 view.findViewById<TextView>(R.id.log_msg).text =
-                    Utils.prettifyJson(File(Utils.configPath).readText())
+                    Utils.prettifyJson(File(Config.configPath).readText())
                 AlertDialog.Builder(requireContext()).apply {
                     setPositiveButton("OK", null)
                     setView(view)

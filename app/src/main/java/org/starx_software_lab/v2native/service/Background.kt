@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.os.IBinder
 import android.util.Log
 import org.starx_software_lab.v2native.R
+import org.starx_software_lab.v2native.util.Iptables
 import org.starx_software_lab.v2native.util.Utils
 import org.starx_software_lab.v2native.util.exec.Exec
 import org.starx_software_lab.v2native.util.exec.IDataReceived
@@ -20,8 +21,8 @@ class Background : Service() {
         const val id = "service"
     }
 
-    private val terminals = Array<Exec?>(2) { null }
-    private lateinit var iptables: Utils.Iptables
+    private lateinit var terminal: Exec
+    private lateinit var iptables: Iptables
     private lateinit var receiver: Receiver
     private lateinit var serverIP: String
     private lateinit var main: Thread
@@ -41,49 +42,34 @@ class Background : Service() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         main = Thread {
-            Utils.cleanLogs()
             try {
-                intent.getStringExtra("ip")!!.also {
+                Utils.cleanLogs()
+                intent.getStringExtra("ip").also {
+                    if (it == null) {
+                        stopSelf()
+                        return@Thread
+                    }
                     serverIP = it
                 }
-            } catch (e: Exception) {
-                Log.d(TAG, "onStartCommand: wtf??")
-                stopSelf()
-                return@Thread
-            }
-            val filesPath = applicationContext.filesDir.absolutePath
-            Utils.extract(filesPath, applicationContext.assets)
-            terminals[0] = Exec().also {
-                it.setListener(object : IDataReceived {
-                    override fun onFailed() {
-                        Utils.updateLogs("Failed")
-                    }
-
-                    override fun onData(data: String) {
-                        Utils.updateLogs(data)
-                    }
-                })
-                it.exec("$filesPath/v2ray -config $filesPath/config.json")
-                Utils.updateLogs("V2ray 已启动")
-            }
-            terminals[1] = Exec().also {
-                it.setListener(object : IDataReceived {
-                    override fun onFailed() {
-                        Log.d(TAG, "onFailed: terminal")
-                    }
-
-                    override fun onData(data: String) {
-                        Utils.updateLogs(data)
-                        if (it.lastCmd == "nproc") {
-                            it.exec("${filesPath}/ipt2socks -s 0.0.0.0 -p 10808 -b \"0.0.0.0\" -l \"12345\" -R -j $data")
-                            Utils.updateLogs("ipt2socks $data 线程 已启动")
+                val filesPath = applicationContext.filesDir.absolutePath
+                Utils.extract(filesPath, applicationContext.assets)
+                terminal = Exec().also {
+                    it.setListener(object : IDataReceived {
+                        override fun onFailed() {
+                            Utils.updateLogs("Failed")
                         }
-                    }
-                })
-                //it.exec("nproc")
-            }
-            iptables = Utils.Iptables(serverIP, this).apply {
-                setup()
+
+                        override fun onData(data: String) {
+                            Utils.updateLogs(data)
+                        }
+                    })
+                    it.exec("$filesPath/v2ray -config $filesPath/config.json")
+                    Utils.updateLogs("V2ray 已启动")
+                }
+                iptables = Iptables(false, serverIP, this)
+                iptables.setup()
+            } catch (e: InterruptedException) {
+                return@Thread
             }
         }.apply {
             start()
@@ -106,10 +92,8 @@ class Background : Service() {
     }
 
     private fun cleanUP(hard: Boolean) {
-        if (::iptables.isInitialized) iptables.clean(hard)
-        terminals.forEach {
-            it?.exit()
-        }
+        iptables.clean(hard)
+        terminal.exit()
         Utils.cancel(this)
     }
 

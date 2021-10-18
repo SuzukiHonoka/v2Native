@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import org.starx_software_lab.v2native.util.Config
 import org.starx_software_lab.v2native.util.Utils
 
 class OnBootCompleted : BroadcastReceiver() {
@@ -13,7 +14,7 @@ class OnBootCompleted : BroadcastReceiver() {
                 v,
                 "autoStart",
                 false
-            ) || !Utils.updateConfigPath(v) || !Utils.checkConfig()
+            ) || !Config.updateConfigPath(v) || !Config.checkConfig()
         ) return
         if (!Utils.serviceAgent(v)) {
             Toast.makeText(v, "无法启动服务", Toast.LENGTH_SHORT).show()
