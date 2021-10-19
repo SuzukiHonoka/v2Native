@@ -11,14 +11,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -27,23 +24,26 @@ import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.util.Config
 import org.starx_software_lab.v2native.util.Utils
+import org.starx_software_lab.v2native.widget.CustomizedCard
 import java.io.File
 import java.io.InputStreamReader
 
-class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener {
+class HomeFragment : Fragment() {
 
     companion object {
         const val TAG = "Home"
     }
 
     private lateinit var receiver: Receiver
-    private lateinit var start: CardView
-    private lateinit var flag: ImageView
-    private lateinit var status: TextView
+    private var blocks: Array<CustomizedCard?> = Array(2) { null }
     private lateinit var v: View
     private lateinit var resultLauncher: ActivityResultLauncher<Intent>
-    private var allow: Boolean? = null
     private var autoCheck = true
+
+    // flags
+    private var hasRoot = false
+    private var hasConfig = Config.checkConfig()
+
 
     var running = false
 
@@ -56,28 +56,124 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             Toast.makeText(requireContext(), "已过期", Toast.LENGTH_SHORT).show()
             requireActivity().finish()
         }
-        val homeViewModel: HomeViewModel by activityViewModels()
-        homeViewModel.getAllow().observe(viewLifecycleOwner, {
-            allow = it
-        })
-        v = inflater.inflate(R.layout.fragment_home, container, false).also { it ->
-            it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener(this)
-            setOf(R.id.load, R.id.check).forEach { b ->
-                it.findViewById<Button>(b).setOnClickListener(this)
-            }
-            start = it.findViewById(R.id.start)
-            start.setOnClickListener(this)
-            start.setOnLongClickListener(this)
-            flag = it.findViewById(R.id.flag)
-            status = it.findViewById(R.id.status)
-//            it.findViewById<CardView>(R.id.start).setOnClickListener {
-//                Snackbar.make(it,"oh shit", Snackbar.LENGTH_SHORT).show()
-//            }
-        }
+        boundVM()
+        v = boundWidgets(inflater, container!!)
         resultLauncher = regResultLauncher()
         regBroadcastReceiver()
         checkLife(false)
         return v
+    }
+
+    private fun boundVM() {
+        val homeViewModel: HomeViewModel by activityViewModels()
+        homeViewModel.getRootStatus().observe(viewLifecycleOwner, {
+            hasRoot = it
+        })
+    }
+
+    private fun switchServiceStatus(status: Boolean) {
+        if (status) {
+            blocks[0]!!.apply {
+                setIcon(requireContext().getDrawable(R.drawable.ic_md_check_circle)!!)
+                setBackgroundColor(requireContext().getColor(R.color.green))
+                setBody(
+                    getString(R.string.service_currently_running),
+                    requireContext().getColor(R.color.white)
+                )
+            }
+            return
+        }
+        blocks[0]!!.apply {
+            setIcon(requireContext().getDrawable(R.drawable.ic_md_warning)!!)
+            setBackgroundColor(requireContext().getColor(R.color.orange))
+            setBody(
+                getString(R.string.service_currently_not_running),
+                requireContext().getColor(R.color.white)
+            )
+        }
+    }
+
+    private fun switchConfigStatus(status: Boolean) {
+        if (status) {
+            blocks[1]!!.apply {
+                setBody(
+                    getString(R.string.config_currently_imported),
+                    requireContext().getColor(R.color.green)
+                )
+            }
+            return
+        }
+        blocks[1]!!.apply {
+            setBody(
+                getString(R.string.config_not_currently_imported),
+                requireContext().getColor(R.color.red)
+            )
+        }
+    }
+
+    private fun boundWidgets(inflater: LayoutInflater, container: ViewGroup): View {
+        return inflater.inflate(R.layout.fragment_home, container, false).also {
+            it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener {
+                if (!autoCheck) {
+                    Toast.makeText(v.context, "等待服务进程结束", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                checkLife(false)
+            }
+            blocks[0] = it.findViewById(R.id.switch_service)
+            blocks[0]!!.apply {
+                switchServiceStatus(false)
+                setCaption(
+                    getString(R.string.v2native_switch),
+                    requireContext().getColor(R.color.white)
+                )
+                setOnClickListener { switchService() }
+                setOnLongClickListener {
+                    checkLife(true)
+                    return@setOnLongClickListener true
+                }
+            }
+            blocks[1] = it.findViewById(R.id.import_config)
+            blocks[1]!!.apply {
+                setIcon(requireContext().getDrawable(R.drawable.ic_md_build)!!)
+                setCaption(getString(R.string.import_config), null)
+                switchConfigStatus(hasConfig)
+                setOnClickListener { startConfigChooser() }
+                setOnLongClickListener {
+                    showConfigToAlertDialog()
+                    return@setOnLongClickListener true
+                }
+            }
+        }
+    }
+
+    private fun switchService() {
+        if (!hasRoot) {
+            Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        if (!Config.checkConfig()) {
+            Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        if (!autoCheck) {
+            Snackbar.make(v, "请等待初始化完毕", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        Thread {
+            if (running) {
+                v.context.applicationContext.apply {
+                    autoCheck = false
+                    stopService(Intent(context, Background::class.java))
+                }
+                return@Thread
+            }
+            v.context.applicationContext.also {
+                if (!Utils.serviceAgent(v.context)) {
+                    Snackbar.make(v, "无法启动服务", Snackbar.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
     }
 
     private fun regResultLauncher(): ActivityResultLauncher<Intent> {
@@ -95,6 +191,8 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                         reader.close()
                         if (Config.reWriteConfig(requireContext(), s)) {
                             Handler(v.context.mainLooper).post {
+                                hasConfig = true
+                                switchConfigStatus(true)
                                 Snackbar.make(v, "应用成功", Snackbar.LENGTH_SHORT).show()
                             }
                             return@Thread
@@ -105,6 +203,27 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                     }
                 }.start()
             }
+        }
+    }
+
+    private fun startConfigChooser() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+        }
+        resultLauncher.launch(intent)
+    }
+
+    private fun showConfigToAlertDialog() {
+        if (!hasConfig) return
+        val view = LayoutInflater.from(context).inflate(R.layout.log_view, null)
+        view.findViewById<TextView>(R.id.log_msg).text =
+            Utils.prettifyJson(File(Config.configPath).readText())
+        AlertDialog.Builder(requireContext()).apply {
+            setPositiveButton("OK", null)
+            setView(view)
+            create()
+            show()
         }
     }
 
@@ -126,81 +245,19 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
         override fun onReceive(p0: Context?, p1: Intent) {
             Log.d("UI", "onReceive: pong!!")
             running = p1.getBooleanExtra("running", false)
-            status.text = if (running) getString(R.string.start) else getString(R.string.stop)
-            autoCheck = true
+            blocks[0]!!.body.text =
+                if (running) getString(R.string.service_currently_running) else getString(R.string.service_currently_not_running)
             if (running) {
-                start.setCardBackgroundColor(requireContext().getColor(R.color.green))
-                flag.background = requireContext().getDrawable(R.drawable.ic_md_check_circle)
+                autoCheck = true
+                switchServiceStatus(true)
                 Toast.makeText(context, "Service Running", Toast.LENGTH_SHORT).show()
                 return
             }
-            start.setCardBackgroundColor(requireContext().getColor(R.color.orange))
-            flag.background = requireContext().getDrawable(R.drawable.ic_md_warning)
+            switchServiceStatus(false)
             Toast.makeText(context, "Service Stopped", Toast.LENGTH_SHORT).show()
         }
     }
 
-    override fun onClick(p0: View) {
-        when (p0.id) {
-            R.id.start -> {
-                if (allow == null || allow == false) {
-                    Snackbar.make(v, "请检查超级用户权限", Snackbar.LENGTH_SHORT).show()
-                    return
-                }
-                if (!Config.checkConfig()) {
-                    Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
-                    return
-                }
-                if (!autoCheck) {
-                    Snackbar.make(v, "请等待初始化完毕", Snackbar.LENGTH_SHORT).show()
-                    return
-                }
-                autoCheck = false
-                Thread {
-                    if (running) {
-                        v.context.applicationContext.apply {
-                            stopService(Intent(context, Background::class.java))
-                        }
-                        return@Thread
-                    }
-                    v.context.applicationContext.also {
-                        if (!Utils.serviceAgent(v.context)) {
-                            Snackbar.make(v, "无法启动服务", Snackbar.LENGTH_SHORT).show()
-                        }
-                    }
-                }.start()
-            }
-            R.id.tab -> {
-                if (!autoCheck) {
-                    Toast.makeText(v.context, "等待服务进程结束", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                checkLife(false)
-            }
-            R.id.load -> {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/json"
-                }
-                resultLauncher.launch(intent)
-            }
-            R.id.check -> {
-                if (!Config.checkConfig()) {
-                    Snackbar.make(p0, "配置文件错误或不存在", Snackbar.LENGTH_SHORT).show()
-                    return
-                }
-                val view = LayoutInflater.from(context).inflate(R.layout.log_view, null)
-                view.findViewById<TextView>(R.id.log_msg).text =
-                    Utils.prettifyJson(File(Config.configPath).readText())
-                AlertDialog.Builder(requireContext()).apply {
-                    setPositiveButton("OK", null)
-                    setView(view)
-                    create()
-                    show()
-                }
-            }
-        }
-    }
 
     private fun checkLife(stop: Boolean) {
         Intent().also {
@@ -209,22 +266,13 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
                 it.putExtra("clean", true)
             }
             v.context.sendBroadcast(it)
-            Log.d("TAG", "onCreateView: send broadcast")
+            Log.d(TAG, "checkLife: send broadcast")
         }
     }
 
     override fun onResume() {
+        Log.d(TAG, "onResume")
         if (autoCheck) checkLife(false)
         super.onResume()
-    }
-
-    override fun onLongClick(p0: View): Boolean {
-        return when (p0.id) {
-            R.id.start -> {
-                checkLife(true)
-                true
-            }
-            else -> false
-        }
     }
 }
