@@ -38,14 +38,13 @@ class HomeFragment : Fragment() {
     private var blocks: Array<CustomizedCard?> = Array(2) { null }
     private lateinit var v: View
     private lateinit var resultLauncher: ActivityResultLauncher<Intent>
-    private var autoCheck = true
 
     // flags
     private var hasRoot = false
     private var hasConfig = Config.checkConfig()
 
 
-    var running = false
+    private var running = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -114,10 +113,6 @@ class HomeFragment : Fragment() {
     private fun boundWidgets(inflater: LayoutInflater, container: ViewGroup): View {
         return inflater.inflate(R.layout.fragment_home, container, false).also {
             it.findViewById<FloatingActionButton>(R.id.tab).setOnClickListener {
-                if (!autoCheck) {
-                    Toast.makeText(v.context, "等待服务进程结束", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
                 checkLife(false)
             }
             blocks[0] = it.findViewById(R.id.switch_service)
@@ -156,22 +151,20 @@ class HomeFragment : Fragment() {
             Snackbar.make(v, "请传入配置文件后启动", Snackbar.LENGTH_SHORT).show()
             return
         }
-        if (!autoCheck) {
-            Snackbar.make(v, "请等待初始化完毕", Snackbar.LENGTH_SHORT).show()
-            return
-        }
         Thread {
             if (running) {
                 v.context.applicationContext.apply {
-                    autoCheck = false
                     stopService(Intent(context, Background::class.java))
+                    running = false
                 }
                 return@Thread
             }
             v.context.applicationContext.also {
                 if (!Utils.serviceAgent(v.context)) {
                     Snackbar.make(v, "无法启动服务", Snackbar.LENGTH_SHORT).show()
+                    return@Thread
                 }
+                running = true
             }
         }.start()
     }
@@ -245,10 +238,8 @@ class HomeFragment : Fragment() {
         override fun onReceive(p0: Context?, p1: Intent) {
             Log.d("UI", "onReceive: pong!!")
             running = p1.getBooleanExtra("running", false)
-            blocks[0]!!.body.text =
-                if (running) getString(R.string.service_currently_running) else getString(R.string.service_currently_not_running)
+            switchServiceStatus(running)
             if (running) {
-                autoCheck = true
                 switchServiceStatus(true)
                 Toast.makeText(context, "Service Running", Toast.LENGTH_SHORT).show()
                 return
@@ -272,7 +263,7 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         Log.d(TAG, "onResume")
-        if (autoCheck) checkLife(false)
+        if (running) checkLife(false)
         super.onResume()
     }
 }
