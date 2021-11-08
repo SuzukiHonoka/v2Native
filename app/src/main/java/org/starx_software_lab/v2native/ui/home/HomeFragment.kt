@@ -92,7 +92,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun switchConfigStatus(status: Boolean) {
+    fun switchConfigStatus(status: Boolean) {
         if (status) {
             blocks[1]!!.apply {
                 setBody(

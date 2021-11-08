@@ -30,6 +30,7 @@ import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
 import org.starx_software_lab.v2native.ui.settings.SettingsActivity
 import org.starx_software_lab.v2native.util.Config
+import org.starx_software_lab.v2native.util.Fragment
 import org.starx_software_lab.v2native.util.Utils
 
 
@@ -111,6 +112,11 @@ class MainActivity : AppCompatActivity() {
         if (Config.reWriteConfig(applicationContext, data)) {
             Toast.makeText(applicationContext, "导入成功!", Toast.LENGTH_SHORT).show()
         }
+        // refresh ui
+        val current = Fragment(this).getCurrentFragment()
+        if (current is HomeFragment) {
+            current.switchConfigStatus(true)
+        }
     }
 
     private fun showAboutDialog() {
@@ -145,7 +151,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        supportFragmentManager.findFragmentById(R.id.nav_host_fragment)!!.childFragmentManager.fragments[0]
+        Fragment(this).getCurrentFragment()
             .also {
                 if (it is HomeFragment) {
                     val now = System.currentTimeMillis()

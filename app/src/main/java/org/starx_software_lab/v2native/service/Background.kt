@@ -28,7 +28,7 @@ class Background : Service() {
     private lateinit var serverIP: String
     private lateinit var main: Thread
 
-    private var readers = MutableList<StreamReader?>(2) { null }
+    private val readers = MutableList<StreamReader?>(2) { null }
     private var running = false
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -44,8 +44,8 @@ class Background : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
+        running = true
         main = Thread {
-            running = true
             try {
                 Utils.cleanLogs()
                 intent.getStringExtra("ip").also {
