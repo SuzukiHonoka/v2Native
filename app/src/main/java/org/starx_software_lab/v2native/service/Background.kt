@@ -28,7 +28,7 @@ class Background : Service() {
     private lateinit var serverIP: String
     private lateinit var main: Thread
 
-    private val readers = MutableList<StreamReader?>(2) { null }
+    private var readers = MutableList<StreamReader?>(2) { null }
     private var running = false
 
     override fun onBind(p0: Intent?): IBinder? {
