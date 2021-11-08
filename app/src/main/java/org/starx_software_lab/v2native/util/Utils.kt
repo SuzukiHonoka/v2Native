@@ -27,10 +27,7 @@ import java.time.LocalDate
 
 class Utils {
     companion object {
-        private const val TAG = "Util"
         private val preloads = arrayOf(
-            "v2ray",
-            "v2ctl",
             "geosite.dat",
             "geoip.dat",
             "cn.zone"

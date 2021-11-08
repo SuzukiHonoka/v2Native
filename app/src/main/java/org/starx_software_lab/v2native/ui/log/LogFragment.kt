@@ -22,7 +22,7 @@ class LogFragment : Fragment() {
         textView.text = Iptables.logs
         root.findViewById<Button>(R.id.refresh).setOnClickListener {
             val lines = Iptables.logs.split("\n")
-            val start = if (lines.size > 1000) lines.size - 1000 else 0
+            val start = if (lines.size > 300) lines.size - 300 else 0
             val reduced = lines.subList(start, lines.size)
             textView.text = reduced.joinToString("\n")
         }

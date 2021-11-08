@@ -25,6 +25,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.JsonParser
 import org.starx_software_lab.v2native.service.Background
 import org.starx_software_lab.v2native.ui.home.HomeFragment
 import org.starx_software_lab.v2native.ui.settings.SettingsActivity
@@ -65,20 +66,10 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    @SuppressLint("BatteryLife")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_quick -> {
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                if (!clipboard.hasPrimaryClip() || !clipboard.primaryClipDescription!!.hasMimeType(
-                        MIMETYPE_TEXT_PLAIN
-                    )
-                ) {
-                    Toast.makeText(applicationContext, "剪贴板数据无效", Toast.LENGTH_SHORT).show()
-                    return true
-                }
-                val data = clipboard.primaryClip!!.getItemAt(0).text
-                Toast.makeText(applicationContext, "剪贴板数据: $data", Toast.LENGTH_SHORT).show()
+                doQuickImport()
                 true
             }
             R.id.action_settings -> {
@@ -86,28 +77,11 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_disable_battery_optimization -> {
-                val pm = getSystemService(POWER_SERVICE) as PowerManager
-                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                    Intent().also { intent ->
-                        intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                        intent.data = Uri.parse("package:$packageName")
-                        startActivity(intent)
-                    }
-                } else {
-                    Snackbar.make(
-                        supportFragmentManager.findFragmentById(R.id.nav_host_fragment)!!.childFragmentManager.fragments[0].requireView(),
-                        "当前已优化",
-                        Snackbar.LENGTH_SHORT
-                    ).show()
-                }
+                disableBatteryOptimization()
                 true
             }
             R.id.action_about -> {
-                AlertDialog.Builder(this)
-                    .setTitle("About")
-                    .setMessage("A tool made by @starx")
-                    .create()
-                    .show()
+                showAboutDialog()
                 true
             }
             R.id.action_exit -> {
@@ -116,6 +90,53 @@ class MainActivity : AppCompatActivity() {
             }
             else -> false
         }
+    }
+
+    private fun doQuickImport() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        if (!clipboard.hasPrimaryClip() || !clipboard.primaryClipDescription!!.hasMimeType(
+                MIMETYPE_TEXT_PLAIN
+            )
+        ) {
+            Toast.makeText(applicationContext, "剪贴板数据无效", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val data = clipboard.primaryClip!!.getItemAt(0).text.toString().trim()
+        try {
+            JsonParser.parseString(data)
+        } catch (e: Exception) {
+            Toast.makeText(applicationContext, "不是有效的JSON格式!!", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (Config.reWriteConfig(applicationContext, data)) {
+            Toast.makeText(applicationContext, "导入成功!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showAboutDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("About")
+            .setMessage("A tool made by @starx")
+            .create()
+            .show()
+    }
+
+    @SuppressLint("BatteryLife")
+    private fun disableBatteryOptimization() {
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            Intent().also { intent ->
+                intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            }
+            return
+        }
+        Snackbar.make(
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment)!!.childFragmentManager.fragments[0].requireView(),
+            "当前已优化",
+            Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     override fun onSupportNavigateUp(): Boolean {

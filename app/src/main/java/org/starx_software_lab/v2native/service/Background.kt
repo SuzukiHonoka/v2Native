@@ -12,8 +12,9 @@ import android.util.Log
 import org.starx_software_lab.v2native.R
 import org.starx_software_lab.v2native.util.Iptables
 import org.starx_software_lab.v2native.util.Utils
-import org.starx_software_lab.v2native.util.exec.Exec
-import org.starx_software_lab.v2native.util.exec.IDataReceived
+import org.starx_software_lab.v2native.util.exec.StreamReader
+import java.io.File
+import java.io.InputStreamReader
 
 class Background : Service() {
     companion object {
@@ -21,11 +22,13 @@ class Background : Service() {
         const val id = "service"
     }
 
-    private lateinit var terminal: Exec
+    private lateinit var terminal: Process
     private lateinit var iptables: Iptables
     private lateinit var receiver: Receiver
     private lateinit var serverIP: String
     private lateinit var main: Thread
+
+    private var readers = MutableList<StreamReader?>(2) { null }
     private var running = false
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -42,6 +45,7 @@ class Background : Service() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         main = Thread {
+            running = true
             try {
                 Utils.cleanLogs()
                 intent.getStringExtra("ip").also {
@@ -53,19 +57,25 @@ class Background : Service() {
                 }
                 val filesPath = applicationContext.filesDir.absolutePath
                 Utils.extract(filesPath, applicationContext.assets)
-                terminal = Exec().also {
-                    it.setListener(object : IDataReceived {
-                        override fun onFailed() {
-                            Utils.updateLogs("Failed")
-                        }
-
-                        override fun onData(data: String) {
-                            Utils.updateLogs(data)
-                        }
-                    })
-                    it.exec("$filesPath/v2ray -config $filesPath/config.json")
-                    Utils.updateLogs("V2ray 已启动")
+                val builder = ProcessBuilder(
+                    "./v2ray.so", "-config",
+                    "$filesPath/config.json"
+                ).apply {
+                    directory(File(applicationInfo.nativeLibraryDir))
+                    environment()["V2RAY_LOCATION_ASSET"] = application.filesDir.path
                 }
+                terminal = builder.start()
+                Utils.updateLogs("Native Lib Path: ${applicationInfo.nativeLibraryDir}")
+                Utils.updateLogs("V2ray 已启动")
+                // reader threads
+                readers[0] = StreamReader(InputStreamReader(terminal.inputStream)) {
+                    Utils.updateLogs(it)
+                }.apply { read() }
+
+                readers[1] = StreamReader(InputStreamReader(terminal.errorStream)) {
+                    Utils.updateLogs(it)
+                }.apply { read() }
+
                 iptables = Iptables(false, serverIP, this)
                 iptables.setup()
             } catch (e: InterruptedException) {
@@ -74,26 +84,28 @@ class Background : Service() {
         }.apply {
             start()
         }
-        running = true
         updateStatus()
         return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        running = false
         unregisterReceiver(receiver)
         Thread {
             cleanUP(false)
             if (main.isAlive) main.interrupt()
-            running = false
             updateStatus()
         }.start()
         super.onDestroy()
     }
 
     private fun cleanUP(hard: Boolean) {
+        readers.forEach {
+            it!!.enable = false
+        }
         iptables.clean(hard)
-        terminal.exit()
+        terminal.destroyForcibly()
         Utils.cancel(this)
     }
 
