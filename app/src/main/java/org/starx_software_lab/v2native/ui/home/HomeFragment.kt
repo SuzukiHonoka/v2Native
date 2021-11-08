@@ -35,7 +35,7 @@ class HomeFragment : Fragment() {
     }
 
     private lateinit var receiver: Receiver
-    private var blocks: Array<CustomizedCard?> = Array(2) { null }
+    private val blocks: Array<CustomizedCard?> = Array(2) { null }
     private lateinit var v: View
     private lateinit var resultLauncher: ActivityResultLauncher<Intent>
 

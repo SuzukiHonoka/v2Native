@@ -58,7 +58,7 @@ class Background : Service() {
                 val filesPath = applicationContext.filesDir.absolutePath
                 Utils.extract(filesPath, applicationContext.assets)
                 val builder = ProcessBuilder(
-                    "./v2ray.so", "-config",
+                    "./libv2ray.so", "-config",
                     "$filesPath/config.json"
                 ).apply {
                     directory(File(applicationInfo.nativeLibraryDir))
